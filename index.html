@@ -3,122 +3,90 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Labkom Main Menu - Al Umanaa</title>
+  <title>Labkom Al-Umanaa - Main System</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
     
-    /* Dynamic 3D Card Hover Effects */
     .card-3d {
       transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-      transform-style: preserve-3d;
     }
     .card-3d:hover {
       transform: translateY(-8px) scale(1.02);
-      box-shadow: 0 25px 35px -10px rgba(0, 0, 0, 0.12), 0 10px 15px -5px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 25px 30px -10px rgba(79, 70, 229, 0.2);
     }
-    .glass-bg {
-      background: rgba(255, 255, 255, 0.85);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(226, 232, 240, 0.8);
+
+    .seat-card {
+      transition: all 0.25s ease;
     }
+    .seat-card:hover:not(.occupied):not(.maintenance) {
+      transform: translateY(-4px) scale(1.05);
+      box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+    }
+
+    @keyframes pulse-red {
+      0%, 100% { background-color: #450a0a; }
+      50% { background-color: #991b1b; }
+    }
+    .lock-screen-active { animation: pulse-red 1.2s infinite; }
+    .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
   </style>
 </head>
-<body class="bg-gradient-to-br from-slate-100 via-indigo-50/40 to-slate-100 text-slate-800 min-h-screen flex flex-col justify-between antialiased">
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased flex flex-col justify-between selection:bg-indigo-500 selection:text-white pb-12">
 
-  <!-- Main Container -->
-  <div class="max-w-6xl mx-auto px-6 py-12 flex-1 flex flex-col justify-center items-center w-full">
-    
-    <!-- Title Header -->
-    <div class="text-center space-y-3 mb-12">
-      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-100/70 text-indigo-700 text-xs font-bold border border-indigo-200/80 shadow-xs">
-        <span class="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></span> Lab Management System v3.0
-      </div>
-      <h1 class="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight">Labkom Main Menu</h1>
-      <p class="text-sm font-medium text-slate-500 max-w-md mx-auto">Select the laboratory borrowing services you want to access below.</p>
-    </div>
-
-    <!-- 4 Primary Service Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full mb-8">
-      
-      <!-- Card 1: Booking Gadget KBM -->
-      <a href="cinema.html" class="card-3d glass-bg rounded-3xl p-6 flex flex-col justify-between space-y-6 group cursor-pointer border hover:border-indigo-300">
-        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center text-2xl shadow-lg shadow-blue-500/25 group-hover:scale-110 transition">
-          📱
-        </div>
-        <div class="space-y-1">
-          <h3 class="font-extrabold text-blue-600 text-lg group-hover:text-blue-700">Booking Gadget KBM</h3>
-          <p class="text-xs text-slate-500 leading-relaxed">Gadget lending services for KBM activities.</p>
-        </div>
-        <div class="text-xs font-bold text-blue-600 flex items-center gap-1 group-hover:translate-x-1 transition">
-          Access Service →
-        </div>
-      </a>
-
-      <!-- Card 2: Booking Non-KBM Gadgets -->
-      <a href="cinema.html" class="card-3d glass-bg rounded-3xl p-6 flex flex-col justify-between space-y-6 group cursor-pointer border hover:border-indigo-300">
-        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-500 text-white flex items-center justify-center text-2xl shadow-lg shadow-cyan-500/25 group-hover:scale-110 transition">
-          💻
-        </div>
-        <div class="space-y-1">
-          <h3 class="font-extrabold text-cyan-600 text-lg group-hover:text-cyan-700">Booking Non-KBM Gadgets</h3>
-          <p class="text-xs text-slate-500 leading-relaxed">Gadget lending services outside KBM hours.</p>
-        </div>
-        <div class="text-xs font-bold text-cyan-600 flex items-center gap-1 group-hover:translate-x-1 transition">
-          Access Service →
-        </div>
-      </a>
-
-      <!-- Card 3: Booking PC KBM -->
-      <a href="cinema.html" class="card-3d glass-bg rounded-3xl p-6 flex flex-col justify-between space-y-6 group cursor-pointer border hover:border-indigo-300">
-        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-500 text-white flex items-center justify-center text-2xl shadow-lg shadow-emerald-500/25 group-hover:scale-110 transition">
-          🖥️
-        </div>
-        <div class="space-y-1">
-          <h3 class="font-extrabold text-emerald-600 text-lg group-hover:text-emerald-700">Booking PC KBM</h3>
-          <p class="text-xs text-slate-500 leading-relaxed">PC lending services for KBM laboratory sessions.</p>
-        </div>
-        <div class="text-xs font-bold text-emerald-600 flex items-center gap-1 group-hover:translate-x-1 transition">
-          Access Service →
-        </div>
-      </a>
-
-      <!-- Card 4: Booking PC Non-KBM -->
-      <a href="cinema.html" class="card-3d glass-bg rounded-3xl p-6 flex flex-col justify-between space-y-6 group cursor-pointer border hover:border-indigo-300">
-        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-violet-600 to-purple-500 text-white flex items-center justify-center text-2xl shadow-lg shadow-violet-500/25 group-hover:scale-110 transition">
-          🕹️
-        </div>
-        <div class="space-y-1">
-          <h3 class="font-extrabold text-violet-600 text-lg group-hover:text-violet-700">Booking PC Non-KBM</h3>
-          <p class="text-xs text-slate-500 leading-relaxed">PC borrowing services outside KBM hours.</p>
-        </div>
-        <div class="text-xs font-bold text-violet-600 flex items-center gap-1 group-hover:translate-x-1 transition">
-          Access Service →
-        </div>
-      </a>
-
-    </div>
-
-    <!-- Center Bottom Card: Panel Admin -->
-    <div class="max-w-xs w-full">
-      <a href="admin.html" class="card-3d glass-bg rounded-3xl p-5 flex flex-col items-center text-center space-y-3 group cursor-pointer border-2 border-rose-200/70 hover:border-rose-400 bg-gradient-to-b from-white to-rose-50/30">
-        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-500 to-red-600 text-white flex items-center justify-center text-xl shadow-lg shadow-rose-500/30 group-hover:scale-110 transition">
-          ⚙️
-        </div>
+  <!-- Header Nav -->
+  <header class="bg-slate-900/80 border-b border-slate-800/80 sticky top-0 z-30 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 py-3.5 flex flex-wrap justify-between items-center gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-xl flex items-center justify-center font-black text-xl shadow-lg shadow-indigo-500/20">🖥️</div>
         <div>
-          <h3 class="font-extrabold text-rose-600 text-base group-hover:text-rose-700">Panel Admin</h3>
-          <p class="text-xs text-slate-500">Data and systems management</p>
+          <h1 class="font-extrabold text-lg leading-tight tracking-tight text-white">Labkom Al-Umanaa <span class="text-xs px-2 py-0.5 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-full font-bold">v3.2</span></h1>
+          <p id="device-indicator" class="text-xs text-slate-400 font-medium flex items-center gap-1.5 mt-0.5">
+            <span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span> Mode Central Monitor
+          </p>
         </div>
-      </a>
+      </div>
+      <div class="flex items-center gap-2 bg-slate-900/90 p-1.5 rounded-xl border border-slate-800">
+        <button onclick="switchView('dashboard')" id="btn-nav-dash" class="px-4 py-2 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-md shadow-indigo-600/30">🏠 Main Menu</button>
+        <button onclick="switchView('cinema')" id="btn-nav-cinema" class="px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white">🎬 Denah Kursi</button>
+        <a href="admin.html" class="px-4 py-2 rounded-lg text-xs font-bold transition-all text-rose-400 hover:bg-rose-500/10 border border-rose-500/20">⚙️ Panel Admin 🔒</a>
+      </div>
     </div>
+  </header>
 
+  <!-- Lock Screen Overlay (Aktif jika durasi device habis) -->
+  <div id="lock-screen" class="hidden fixed inset-0 z-50 flex flex-col items-center justify-center p-6 text-center text-white backdrop-blur-xl">
+    <div class="glass-card border-2 border-red-500/50 rounded-3xl p-8 max-w-md w-full shadow-2xl shadow-red-950/50 space-y-4">
+      <div class="w-20 h-20 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-center text-4xl mx-auto animate-bounce shadow-inner">🚨</div>
+      <div>
+        <h2 class="text-2xl font-black text-red-500 tracking-tight">WAKTU PEMINJAMAN HABIS!</h2>
+        <p class="text-slate-300 text-xs mt-1">Perangkat <span id="lock-device-id" class="font-bold text-amber-400">LD-XX</span> telah mencapai batas durasi Jampel.</p>
+      </div>
+      
+      <div class="space-y-3 pt-2">
+        <input type="password" id="unlock-pin" placeholder="Masukkan Master PIN Admin" class="w-full px-4 py-3 rounded-xl bg-slate-900/90 border border-slate-700 text-center font-bold tracking-widest text-lg focus:outline-none focus:border-red-500 text-white placeholder:text-slate-600">
+        <button onclick="attemptUnlock()" class="w-full py-3 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white rounded-xl font-bold transition text-sm shadow-lg shadow-red-600/30">BUKA KUNCI PERANGKAT</button>
+      </div>
+      <p id="lock-error" class="text-xs text-red-400 font-semibold hidden">⚠️ PIN Admin Salah!</p>
+    </div>
   </div>
 
-  <!-- Footer -->
-  <footer class="py-6 text-center text-xs font-semibold text-slate-400">
-    © Labkom Al-Umanaa System. All rights reserved.
-  </footer>
+  <main class="max-w-7xl mx-auto px-4 mt-8 flex-1 w-full">
+    
+    <!-- VIEW 1: 3D MAIN MENU (Bentuk 4 Service Card + 1 Admin Card) -->
+    <div id="view-dashboard" class="space-y-10">
+      <div class="text-center space-y-3 max-w-lg mx-auto">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-bold border border-indigo-500/20">
+          <span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span> Lab Management Services
+        </div>
+        <h2 class="text-3xl sm:text-4xl font-black text-white tracking-tight">Labkom Main Menu</h2>
+        <p class="text-xs text-slate-400">Pilih layanan peminjaman laboratorium yang ingin Anda akses di bawah ini.</p>
+      </div>
 
-</body>
-</html>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div onclick="switchView('cinema')" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-6 group cursor-pointer hover:border-indigo-500/50">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center text-2xl shadow-lg shadow-blue-500/20 group-hover:scale-110 transition">📱</div>
+          <div class="space-y-1">
+            <h3 class="font-extrabold text-indigo-400 text-base group-hover:text-indigo-300">Booking Gadget KBM</h3>
+            <p class="text-xs text-slate-400 leading-relaxed
