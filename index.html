@@ -3,527 +3,122 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Labkom v3.1 - Management & Alarm System</title>
+  <title>Labkom Main Menu - Al Umanaa</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .seat { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
-    .seat:hover:not(.occupied) { transform: translateY(-4px) scale(1.03); }
-    @keyframes pulse-red {
-      0%, 100% { background-color: #450a0a; }
-      50% { background-color: #991b1b; }
+    
+    /* Dynamic 3D Card Hover Effects */
+    .card-3d {
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transform-style: preserve-3d;
     }
-    .lock-screen-active { animation: pulse-red 1.2s infinite; }
-    .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .card-3d:hover {
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 25px 35px -10px rgba(0, 0, 0, 0.12), 0 10px 15px -5px rgba(0, 0, 0, 0.04);
+    }
+    .glass-bg {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+    }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen antialiased pb-16 selection:bg-indigo-500 selection:text-white">
+<body class="bg-gradient-to-br from-slate-100 via-indigo-50/40 to-slate-100 text-slate-800 min-h-screen flex flex-col justify-between antialiased">
 
-  <!-- Header Nav -->
-  <header class="bg-slate-900/80 border-b border-slate-800/80 sticky top-0 z-30 backdrop-blur-md">
-    <div class="max-w-7xl mx-auto px-4 py-3.5 flex flex-wrap justify-between items-center gap-4">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-xl flex items-center justify-center font-black text-xl shadow-lg shadow-indigo-500/20">🖥️</div>
-        <div>
-          <h1 class="font-extrabold text-lg leading-tight tracking-tight text-white">Labkom Al-Umanaa <span class="text-xs px-2 py-0.5 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-full font-bold">v3.1</span></h1>
-          <p id="device-indicator" class="text-xs text-slate-400 font-medium flex items-center gap-1.5 mt-0.5">
-            <span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span> Mode Central Monitor
-          </p>
-        </div>
+  <!-- Main Container -->
+  <div class="max-w-6xl mx-auto px-6 py-12 flex-1 flex flex-col justify-center items-center w-full">
+    
+    <!-- Title Header -->
+    <div class="text-center space-y-3 mb-12">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-100/70 text-indigo-700 text-xs font-bold border border-indigo-200/80 shadow-xs">
+        <span class="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></span> Lab Management System v3.0
       </div>
-      <div class="flex items-center gap-2 bg-slate-900/90 p-1.5 rounded-xl border border-slate-800">
-        <button onclick="switchTab('client')" id="btn-tab-client" class="px-4 py-2 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-md shadow-indigo-600/30">🎬 Denah Kursi</button>
-        <button onclick="switchTab('admin')" id="btn-tab-admin" class="px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white">⚙️ Panel Admin & Setup Device</button>
-      </div>
+      <h1 class="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight">Labkom Main Menu</h1>
+      <p class="text-sm font-medium text-slate-500 max-w-md mx-auto">Select the laboratory borrowing services you want to access below.</p>
     </div>
-  </header>
 
-  <!-- Lock Screen Overlay -->
-  <div id="lock-screen" class="hidden fixed inset-0 z-50 flex flex-col items-center justify-center p-6 text-center text-white backdrop-blur-xl">
-    <div class="glass-card border-2 border-red-500/50 rounded-3xl p-8 max-w-md w-full shadow-2xl shadow-red-950/50 space-y-4">
-      <div class="w-20 h-20 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-center text-4xl mx-auto animate-bounce shadow-inner">🚨</div>
-      <div>
-        <h2 class="text-2xl font-black text-red-500 tracking-tight">WAKTU PEMINJAMAN HABIS!</h2>
-        <p class="text-slate-300 text-xs mt-1">Perangkat <span id="lock-device-id" class="font-bold text-amber-400">LD-XX</span> telah mencapai batas durasi Jampel.</p>
-      </div>
+    <!-- 4 Primary Service Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full mb-8">
       
-      <div class="space-y-3 pt-2">
-        <input type="password" id="unlock-pin" placeholder="Masukkan Master PIN Admin" class="w-full px-4 py-3 rounded-xl bg-slate-900/90 border border-slate-700 text-center font-bold tracking-widest text-lg focus:outline-none focus:border-red-500 text-white placeholder:text-slate-600">
-        <button onclick="attemptUnlock()" class="w-full py-3 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white rounded-xl font-bold transition text-sm shadow-lg shadow-red-600/30">BUKA KUNCI PERANGKAT</button>
-      </div>
-      <p id="lock-error" class="text-xs text-red-400 font-semibold hidden">⚠️ PIN Admin Salah!</p>
+      <!-- Card 1: Booking Gadget KBM -->
+      <a href="cinema.html" class="card-3d glass-bg rounded-3xl p-6 flex flex-col justify-between space-y-6 group cursor-pointer border hover:border-indigo-300">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center text-2xl shadow-lg shadow-blue-500/25 group-hover:scale-110 transition">
+          📱
+        </div>
+        <div class="space-y-1">
+          <h3 class="font-extrabold text-blue-600 text-lg group-hover:text-blue-700">Booking Gadget KBM</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">Gadget lending services for KBM activities.</p>
+        </div>
+        <div class="text-xs font-bold text-blue-600 flex items-center gap-1 group-hover:translate-x-1 transition">
+          Access Service →
+        </div>
+      </a>
+
+      <!-- Card 2: Booking Non-KBM Gadgets -->
+      <a href="cinema.html" class="card-3d glass-bg rounded-3xl p-6 flex flex-col justify-between space-y-6 group cursor-pointer border hover:border-indigo-300">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-500 text-white flex items-center justify-center text-2xl shadow-lg shadow-cyan-500/25 group-hover:scale-110 transition">
+          💻
+        </div>
+        <div class="space-y-1">
+          <h3 class="font-extrabold text-cyan-600 text-lg group-hover:text-cyan-700">Booking Non-KBM Gadgets</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">Gadget lending services outside KBM hours.</p>
+        </div>
+        <div class="text-xs font-bold text-cyan-600 flex items-center gap-1 group-hover:translate-x-1 transition">
+          Access Service →
+        </div>
+      </a>
+
+      <!-- Card 3: Booking PC KBM -->
+      <a href="cinema.html" class="card-3d glass-bg rounded-3xl p-6 flex flex-col justify-between space-y-6 group cursor-pointer border hover:border-indigo-300">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-500 text-white flex items-center justify-center text-2xl shadow-lg shadow-emerald-500/25 group-hover:scale-110 transition">
+          🖥️
+        </div>
+        <div class="space-y-1">
+          <h3 class="font-extrabold text-emerald-600 text-lg group-hover:text-emerald-700">Booking PC KBM</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">PC lending services for KBM laboratory sessions.</p>
+        </div>
+        <div class="text-xs font-bold text-emerald-600 flex items-center gap-1 group-hover:translate-x-1 transition">
+          Access Service →
+        </div>
+      </a>
+
+      <!-- Card 4: Booking PC Non-KBM -->
+      <a href="cinema.html" class="card-3d glass-bg rounded-3xl p-6 flex flex-col justify-between space-y-6 group cursor-pointer border hover:border-indigo-300">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-violet-600 to-purple-500 text-white flex items-center justify-center text-2xl shadow-lg shadow-violet-500/25 group-hover:scale-110 transition">
+          🕹️
+        </div>
+        <div class="space-y-1">
+          <h3 class="font-extrabold text-violet-600 text-lg group-hover:text-violet-700">Booking PC Non-KBM</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">PC borrowing services outside KBM hours.</p>
+        </div>
+        <div class="text-xs font-bold text-violet-600 flex items-center gap-1 group-hover:translate-x-1 transition">
+          Access Service →
+        </div>
+      </a>
+
     </div>
+
+    <!-- Center Bottom Card: Panel Admin -->
+    <div class="max-w-xs w-full">
+      <a href="admin.html" class="card-3d glass-bg rounded-3xl p-5 flex flex-col items-center text-center space-y-3 group cursor-pointer border-2 border-rose-200/70 hover:border-rose-400 bg-gradient-to-b from-white to-rose-50/30">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-500 to-red-600 text-white flex items-center justify-center text-xl shadow-lg shadow-rose-500/30 group-hover:scale-110 transition">
+          ⚙️
+        </div>
+        <div>
+          <h3 class="font-extrabold text-rose-600 text-base group-hover:text-rose-700">Panel Admin</h3>
+          <p class="text-xs text-slate-500">Data and systems management</p>
+        </div>
+      </a>
+    </div>
+
   </div>
 
-  <main class="max-w-7xl mx-auto px-4 mt-6">
-    <!-- View 1: Denah Bioskop / Booking -->
-    <div id="view-client" class="space-y-6">
-      <!-- Screen Display -->
-      <div class="relative w-full glass-card rounded-2xl p-4 text-center overflow-hidden shadow-xl">
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent"></div>
-        <p class="text-[11px] font-bold uppercase tracking-widest text-indigo-400/90">Papan Layar Utama / Meja Pengawas Labkom</p>
-        <div class="w-1/2 mx-auto h-1.5 bg-gradient-to-r from-transparent via-indigo-500 to-transparent rounded-full blur-xs mt-1"></div>
-      </div>
+  <!-- Footer -->
+  <footer class="py-6 text-center text-xs font-semibold text-slate-400">
+    © Labkom Al-Umanaa System. All rights reserved.
+  </footer>
 
-      <!-- Main Layout Card -->
-      <div class="glass-card rounded-3xl p-6 sm:p-8 shadow-2xl">
-        <div class="flex flex-wrap justify-between items-center gap-4 mb-8 border-b border-slate-800/80 pb-5">
-          <div>
-            <h2 class="text-lg font-bold text-white tracking-tight">Denah Perangkat XXI Cinema Style</h2>
-            <p class="text-xs text-slate-400">Pilih bangku laptop untuk melakukan reservasi atau penggunaan KBM</p>
-          </div>
-          <div class="flex items-center gap-3">
-            <button onclick="openMassBookingModal()" class="px-4 py-2 bg-indigo-600/20 border border-indigo-500/30 hover:bg-indigo-600 text-indigo-300 hover:text-white rounded-xl text-xs font-bold transition shadow-lg shadow-indigo-600/10 flex items-center gap-1.5">
-              <span>⚡</span> Booking Semua Laptop
-            </button>
-            <div class="flex items-center gap-3 text-xs font-semibold border-l border-slate-800 pl-4 text-slate-400">
-              <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20"></span> Tersedia</span>
-              <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 ring-4 ring-rose-500/20"></span> Dipakai</span>
-            </div>
-          </div>
-        </div>
-
-        <div id="seats-container" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3.5 min-h-[240px]">
-          <!-- Seats -->
-        </div>
-      </div>
-    </div>
-
-    <!-- View 2: Dashboard Admin & Setup Device -->
-    <div id="view-admin" class="hidden space-y-6">
-      
-      <!-- Box Panduan Setup Alarm Laptop -->
-      <div class="glass-card border border-indigo-500/30 rounded-3xl p-6 bg-gradient-to-r from-indigo-950/30 to-slate-900/50">
-        <div class="flex items-start gap-4">
-          <div class="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-xl shrink-0">🔗</div>
-          <div class="space-y-1">
-            <h3 class="font-bold text-white text-sm">Cara Menghubungkan Mode Alarm ke Laptop Lab:</h3>
-            <p class="text-xs text-slate-300 leading-relaxed">
-              1. Pilih laptop yang mau di-set (misal Laptop 1 = LD-01).<br>
-              2. Pada tabel di bawah, klik tombol <span class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-[10px] text-indigo-300 font-mono">📋 Salin Link Device</span>.<br>
-              3. Buka link tersebut di browser laptop target, lalu jadikan <strong class="text-indigo-300">Bookmark / Tab Utama Browser</strong>.<br>
-              4. Laptop tersebut otomatis terkunci & membunyikan alarm saat waktunya habis!
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div class="glass-card rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
-        <div class="flex flex-wrap justify-between items-center gap-4">
-          <div>
-            <h2 class="text-lg font-bold text-white tracking-tight">Monitoring Central & Controller Device</h2>
-            <p class="text-xs text-slate-400">Pantau seluruh status durasi dan atur koneksi per-device</p>
-          </div>
-          <button onclick="resetAllData()" class="px-4 py-2 bg-rose-500/10 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-bold hover:bg-rose-600 hover:text-white transition shadow-lg shadow-rose-600/10">
-            🗑️ Reset Semua Status (Kosongkan)
-          </button>
-        </div>
-
-        <div class="overflow-x-auto rounded-2xl border border-slate-800">
-          <table class="w-full text-left text-xs text-slate-300">
-            <thead class="bg-slate-900/90 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
-              <tr>
-                <th class="px-4 py-3.5">Kode Device</th>
-                <th class="px-4 py-3.5">Peminjam</th>
-                <th class="px-4 py-3.5">Durasi Jampel</th>
-                <th class="px-4 py-3.5">Sisa Waktu</th>
-                <th class="px-4 py-3.5">Status</th>
-                <th class="px-4 py-3.5 text-right">Aksi & Link Controller</th>
-              </tr>
-            </thead>
-            <tbody id="admin-table-body" class="divide-y divide-slate-800/60 bg-slate-950/40 font-medium">
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </main>
-
-  <!-- Modal Booking Per-Kursi -->
-  <div id="booking-modal" class="hidden fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="glass-card rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-700/80 space-y-5">
-      <div class="flex justify-between items-center border-b border-slate-800 pb-3.5">
-        <div>
-          <h3 class="font-extrabold text-base text-white">Booking Device <span id="modal-seat-id" class="text-indigo-400">LD-01</span></h3>
-          <p class="text-[11px] text-slate-400">Isi identitas siswa untuk memulai sesi</p>
-        </div>
-        <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white font-bold flex items-center justify-center transition">✕</button>
-      </div>
-
-      <div class="space-y-4">
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Nama Siswa / Peminjam</label>
-          <input type="text" id="input-student-name" placeholder="Contoh: Ahmad Fadil" class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-slate-100 text-xs focus:outline-none focus:border-indigo-500 placeholder:text-slate-600 font-medium">
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Jampel Mulai</label>
-            <select id="select-jampel-start" class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-slate-100 text-xs focus:outline-none focus:border-indigo-500 font-medium">
-              <option value="1">Jampel 1 (07:30)</option>
-              <option value="2">Jampel 2 (08:15)</option>
-              <option value="3">Jampel 3 (09:00)</option>
-              <option value="4">Jampel 4 (09:45)</option>
-              <option value="5">Jampel 5 (10:45)</option>
-              <option value="6">Jampel 6 (11:30)</option>
-              <option value="7">Jampel 7 (13:00)</option>
-              <option value="8">Jampel 8 (13:45)</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Jampel Selesai</label>
-            <select id="select-jampel-end" class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-slate-100 text-xs focus:outline-none focus:border-indigo-500 font-medium">
-              <option value="1">Jampel 1 (08:15)</option>
-              <option value="2">Jampel 2 (09:00)</option>
-              <option value="3">Jampel 3 (09:45)</option>
-              <option value="4" selected>Jampel 4 (10:30)</option>
-              <option value="5">Jampel 5 (11:30)</option>
-              <option value="6">Jampel 6 (12:15)</option>
-              <option value="7">Jampel 7 (13:45)</option>
-              <option value="8">Jampel 8 (14:30)</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex gap-3 pt-2">
-        <button onclick="closeModal()" class="w-1/2 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 text-xs font-semibold transition">Batal</button>
-        <button onclick="confirmBooking()" class="w-1/2 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-600/30 transition">Konfirmasi Booking</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Mass Booking -->
-  <div id="mass-booking-modal" class="hidden fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="glass-card rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-700/80 space-y-5">
-      <div class="flex justify-between items-center border-b border-slate-800 pb-3.5">
-        <div>
-          <h3 class="font-extrabold text-base text-white">⚡ Booking Semua Laptop (24 Unit)</h3>
-          <p class="text-[11px] text-slate-400">Reservasi massal untuk 1 kelas / kegiatan</p>
-        </div>
-        <button onclick="closeMassModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white font-bold flex items-center justify-center transition">✕</button>
-      </div>
-
-      <div class="space-y-4">
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Nama Kelas / Guru / Kegiatan</label>
-          <input type="text" id="input-mass-name" placeholder="Contoh: KBM Informatika XI-IPA 1" class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-slate-100 text-xs focus:outline-none focus:border-indigo-500 placeholder:text-slate-600 font-medium">
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Jampel Mulai</label>
-            <select id="select-mass-start" class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-slate-100 text-xs focus:outline-none focus:border-indigo-500 font-medium">
-              <option value="1">Jampel 1 (07:30)</option>
-              <option value="2">Jampel 2 (08:15)</option>
-              <option value="3">Jampel 3 (09:00)</option>
-              <option value="4">Jampel 4 (09:45)</option>
-              <option value="5">Jampel 5 (10:45)</option>
-              <option value="6">Jampel 6 (11:30)</option>
-              <option value="7">Jampel 7 (13:00)</option>
-              <option value="8">Jampel 8 (13:45)</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Jampel Selesai</label>
-            <select id="select-mass-end" class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-slate-100 text-xs focus:outline-none focus:border-indigo-500 font-medium">
-              <option value="1">Jampel 1 (08:15)</option>
-              <option value="2">Jampel 2 (09:00)</option>
-              <option value="3">Jampel 3 (09:45)</option>
-              <option value="4" selected>Jampel 4 (10:30)</option>
-              <option value="5">Jampel 5 (11:30)</option>
-              <option value="6">Jampel 6 (12:15)</option>
-              <option value="7">Jampel 7 (13:45)</option>
-              <option value="8">Jampel 8 (14:30)</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex gap-3 pt-2">
-        <button onclick="closeMassModal()" class="w-1/2 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 text-xs font-semibold transition">Batal</button>
-        <button onclick="confirmMassBooking()" class="w-1/2 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-600/30 transition">Booking Sekarang</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    const MASTER_PIN = "1234";
-    const TOTAL_DEVICES = 24;
-    let currentDeviceId = null;
-    let selectedSeatId = null;
-    let devicesState = {};
-
-    function generateFreshDevices() {
-      devicesState = {};
-      for (let i = 1; i <= TOTAL_DEVICES; i++) {
-        const id = `LD-${String(i).padStart(2, '0')}`;
-        devicesState[id] = { id, status: 'free', user: '', jampelStart: 1, jampelEnd: 4, endTime: null };
-      }
-      localStorage.setItem('labkom_devices', JSON.stringify(devicesState));
-    }
-
-    function initData() {
-      const saved = localStorage.getItem('labkom_devices');
-      if (saved) {
-        try {
-          devicesState = JSON.parse(saved);
-        } catch(e) {
-          generateFreshDevices();
-        }
-      } else {
-        generateFreshDevices();
-      }
-
-      if (Object.keys(devicesState).length === 0) {
-        generateFreshDevices();
-      }
-
-      const urlParams = new URLSearchParams(window.location.search);
-      currentDeviceId = urlParams.get('device');
-      
-      const indicator = document.getElementById('device-indicator');
-      if (currentDeviceId) {
-        indicator.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Mode Controller Laptop: <strong class="text-emerald-400 font-bold">${currentDeviceId}</strong>`;
-      } else {
-        indicator.innerHTML = `<span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span> Mode Central Monitor Pengawas`;
-      }
-
-      renderSeats();
-      renderAdminTable();
-      checkCurrentDeviceLock();
-    }
-
-    function saveData() {
-      localStorage.setItem('labkom_devices', JSON.stringify(devicesState));
-      renderSeats();
-      renderAdminTable();
-      checkCurrentDeviceLock();
-    }
-
-    function renderSeats() {
-      const container = document.getElementById('seats-container');
-      if (!container) return;
-      container.innerHTML = '';
-
-      Object.values(devicesState).forEach(dev => {
-        const seat = document.createElement('div');
-        const isOccupied = dev.status === 'occupied';
-        const isCurrent = currentDeviceId === dev.id;
-
-        seat.className = `seat p-4 rounded-2xl border flex flex-col items-center justify-between cursor-pointer select-none text-center relative min-h-[110px] ${
-          isOccupied 
-            ? 'bg-rose-950/40 border-rose-500/60 text-rose-100 shadow-lg shadow-rose-950/30' 
-            : 'bg-slate-900/60 border-slate-800/80 text-slate-200 hover:border-indigo-500/70 hover:bg-slate-800/60'
-        } ${isCurrent ? 'ring-2 ring-emerald-400 shadow-lg shadow-emerald-500/20' : ''}`;
-
-        seat.onclick = () => openBookingModal(dev.id);
-
-        seat.innerHTML = `
-          <div class="text-2xl">${isOccupied ? '💻' : '🖥️'}</div>
-          <div>
-            <div class="font-extrabold text-xs tracking-wide">${dev.id}</div>
-            <div class="text-[10px] font-medium opacity-70 truncate max-w-[75px] mt-0.5">
-              ${isOccupied ? dev.user : 'Tersedia'}
-            </div>
-          </div>
-          ${isOccupied ? `<span class="px-2 py-0.5 bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded-md text-[9px] font-bold">J${dev.jampelStart}-J${dev.jampelEnd}</span>` : '<span class="text-[9px] text-emerald-400 font-semibold opacity-60">Ready</span>'}
-        `;
-        container.appendChild(seat);
-      });
-    }
-
-    function renderAdminTable() {
-      const tbody = document.getElementById('admin-table-body');
-      if (!tbody) return;
-      tbody.innerHTML = '';
-
-      Object.values(devicesState).forEach(dev => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-900/80 transition';
-        const deviceUrl = `${window.location.origin}${window.location.pathname}?device=${dev.id}`;
-
-        tr.innerHTML = `
-          <td class="px-4 py-3.5 font-bold text-indigo-400">${dev.id}</td>
-          <td class="px-4 py-3.5">${dev.user || '-'}</td>
-          <td class="px-4 py-3.5 text-slate-400">${dev.status === 'occupied' ? `Jampel ${dev.jampelStart} - ${dev.jampelEnd}` : '-'}</td>
-          <td class="px-4 py-3.5 font-mono text-amber-400 font-bold">${dev.endTime ? formatRemaining(dev.endTime) : '-'}</td>
-          <td class="px-4 py-3.5">
-            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${
-              dev.status === 'occupied' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-            }">
-              ${dev.status === 'occupied' ? 'Dipakai' : 'Tersedia'}
-            </span>
-          </td>
-          <td class="px-4 py-3.5 text-right flex items-center justify-end gap-2">
-            <button onclick="copyDeviceLink('${deviceUrl}')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg text-[11px] font-bold transition">
-              📋 Salin Link Device
-            </button>
-            ${dev.status === 'occupied' ? `<button onclick="unlockDevice('${dev.id}')" class="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 rounded-lg text-[11px] font-bold transition">Reset</button>` : ''}
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function copyDeviceLink(url) {
-      navigator.clipboard.writeText(url);
-      alert('Link Device berhasil disalin!\nBuka link ini di laptop yang bersangkutan.');
-    }
-
-    function openBookingModal(id) {
-      selectedSeatId = id;
-      document.getElementById('modal-seat-id').innerText = id;
-      document.getElementById('input-student-name').value = '';
-      document.getElementById('booking-modal').classList.remove('hidden');
-    }
-
-    function closeModal() {
-      document.getElementById('booking-modal').classList.add('hidden');
-    }
-
-    function confirmBooking() {
-      const name = document.getElementById('input-student-name').value.trim();
-      const start = parseInt(document.getElementById('select-jampel-start').value);
-      const end = parseInt(document.getElementById('select-jampel-end').value);
-
-      if (!name) {
-        alert('Harap isi nama peminjam!');
-        return;
-      }
-      if (end < start) {
-        alert('Jampel selesai tidak boleh lebih awal dari Jampel mulai!');
-        return;
-      }
-
-      const durationMinutes = (end - start + 1) * 45;
-      const endTime = Date.now() + durationMinutes * 60 * 1000;
-
-      devicesState[selectedSeatId] = {
-        id: selectedSeatId,
-        status: 'occupied',
-        user: name,
-        jampelStart: start,
-        jampelEnd: end,
-        endTime: endTime
-      };
-
-      saveData();
-      closeModal();
-    }
-
-    function openMassBookingModal() {
-      document.getElementById('input-mass-name').value = '';
-      document.getElementById('mass-booking-modal').classList.remove('hidden');
-    }
-
-    function closeMassModal() {
-      document.getElementById('mass-booking-modal').classList.add('hidden');
-    }
-
-    function confirmMassBooking() {
-      const name = document.getElementById('input-mass-name').value.trim();
-      const start = parseInt(document.getElementById('select-mass-start').value);
-      const end = parseInt(document.getElementById('select-mass-end').value);
-
-      if (!name) {
-        alert('Harap isi nama kelas / kegiatan!');
-        return;
-      }
-      if (end < start) {
-        alert('Jampel selesai tidak boleh lebih awal dari Jampel mulai!');
-        return;
-      }
-
-      const durationMinutes = (end - start + 1) * 45;
-      const endTime = Date.now() + durationMinutes * 60 * 1000;
-
-      for (let i = 1; i <= TOTAL_DEVICES; i++) {
-        const id = `LD-${String(i).padStart(2, '0')}`;
-        devicesState[id] = {
-          id: id,
-          status: 'occupied',
-          user: name,
-          jampelStart: start,
-          jampelEnd: end,
-          endTime: endTime
-        };
-      }
-
-      saveData();
-      closeMassModal();
-    }
-
-    function unlockDevice(id) {
-      devicesState[id] = { id, status: 'free', user: '', jampelStart: 1, jampelEnd: 4, endTime: null };
-      saveData();
-    }
-
-    function resetAllData() {
-      if (confirm('Yakin ingin mereset seluruh status booking device? Semua bangku akan dikosongkan.')) {
-        generateFreshDevices();
-        renderSeats();
-        renderAdminTable();
-      }
-    }
-
-    function switchTab(tab) {
-      if (tab === 'client') {
-        document.getElementById('view-client').classList.remove('hidden');
-        document.getElementById('view-admin').classList.add('hidden');
-        document.getElementById('btn-tab-client').className = 'px-4 py-2 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-md shadow-indigo-600/30';
-        document.getElementById('btn-tab-admin').className = 'px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white';
-      } else {
-        document.getElementById('view-client').classList.add('hidden');
-        document.getElementById('view-admin').classList.remove('hidden');
-        document.getElementById('btn-tab-admin').className = 'px-4 py-2 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-md shadow-indigo-600/30';
-        document.getElementById('btn-tab-client').className = 'px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white';
-      }
-    }
-
-    function checkCurrentDeviceLock() {
-      if (!currentDeviceId || !devicesState[currentDeviceId]) return;
-      const dev = devicesState[currentDeviceId];
-      const lockOverlay = document.getElementById('lock-screen');
-      document.getElementById('lock-device-id').innerText = currentDeviceId;
-
-      if (dev.status === 'occupied' && dev.endTime && Date.now() >= dev.endTime) {
-        lockOverlay.classList.remove('hidden');
-        document.body.classList.add('lock-screen-active');
-      } else {
-        lockOverlay.classList.add('hidden');
-        document.body.classList.remove('lock-screen-active');
-      }
-    }
-
-    function attemptUnlock() {
-      const pinInput = document.getElementById('unlock-pin').value;
-      const errorMsg = document.getElementById('lock-error');
-
-      if (pinInput === MASTER_PIN) {
-        errorMsg.classList.add('hidden');
-        document.getElementById('unlock-pin').value = '';
-        unlockDevice(currentDeviceId);
-      } else {
-        errorMsg.classList.remove('hidden');
-      }
-    }
-
-    function formatRemaining(endTime) {
-      const diff = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
-      const m = Math.floor(diff / 60);
-      const s = diff % 60;
-      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-    }
-
-    setInterval(() => {
-      renderAdminTable();
-      checkCurrentDeviceLock();
-    }, 1000);
-
-    window.addEventListener('DOMContentLoaded', initData);
-    initData();
-  </script>
 </body>
 </html>
