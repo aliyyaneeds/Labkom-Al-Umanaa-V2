@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Labkom Al-Umanaa - System v3.0</title>
+  <title>Labkom Al-Umanaa - System v3.2</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
@@ -25,7 +25,7 @@
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-xl flex items-center justify-center font-black text-xl shadow-lg shadow-indigo-500/20">🖥️</div>
         <div>
-          <h1 class="font-extrabold text-lg leading-tight tracking-tight text-white">Labkom Al-Umanaa <span class="text-xs px-2 py-0.5 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-full font-bold">v3.0</span></h1>
+          <h1 class="font-extrabold text-lg leading-tight tracking-tight text-white">Labkom Al-Umanaa <span class="text-xs px-2 py-0.5 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-full font-bold">v3.2</span></h1>
           <p id="device-indicator" class="text-xs text-slate-400 font-medium flex items-center gap-1.5 mt-0.5">
             <span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span> Mode Central Monitor
           </p>
@@ -33,7 +33,7 @@
       </div>
       <div class="flex items-center gap-2 bg-slate-900/90 p-1.5 rounded-xl border border-slate-800">
         <button onclick="switchView('menu')" id="btn-nav-menu" class="px-4 py-2 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-md shadow-indigo-600/30">🏠 Main Menu</button>
-        <button onclick="switchView('cinema')" id="btn-nav-cinema" class="px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white">🎬 Denah Bioskop</button>
+        <button onclick="switchView('cinema')" id="btn-nav-cinema" class="px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white">🎬 Denah Perangkat</button>
         <a href="admin.html" class="px-4 py-2 rounded-lg text-xs font-bold transition-all text-rose-400 hover:text-rose-300">⚙️ Admin Panel</a>
       </div>
     </div>
@@ -58,7 +58,7 @@
   <!-- MAIN CONTAINER -->
   <main class="max-w-7xl mx-auto px-4 py-8 flex-1 w-full">
     
-    <!-- VIEW 1: DASHBOARD MAIN MENU (Tampilan 3D Modern) -->
+    <!-- VIEW 1: DASHBOARD MAIN MENU -->
     <div id="view-menu" class="space-y-10 py-6">
       <div class="text-center space-y-3">
         <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold">
@@ -69,40 +69,44 @@
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div onclick="switchView('cinema')" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-6 group cursor-pointer border hover:border-indigo-500/50">
+        <!-- 1. Booking Gadget KBM -->
+        <div onclick="openService('Gadget KBM', 'GADGET')" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-6 group cursor-pointer border hover:border-indigo-500/50">
           <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center text-2xl shadow-lg shadow-blue-500/25">📱</div>
           <div>
             <h3 class="font-extrabold text-blue-400 text-base group-hover:text-blue-300">Booking Gadget KBM</h3>
-            <p class="text-xs text-slate-400 mt-1">Gadget lending services for KBM.</p>
+            <p class="text-xs text-slate-400 mt-1">Peminjaman Laptop DELL (6) & Chromebook (6) KBM.</p>
           </div>
-          <span class="text-xs font-bold text-blue-400 flex items-center gap-1">Access Service →</span>
+          <span class="text-xs font-bold text-blue-400 flex items-center gap-1">Buka Denah Gadget →</span>
         </div>
 
-        <div onclick="switchView('cinema')" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-6 group cursor-pointer border hover:border-indigo-500/50">
+        <!-- 2. Booking Non-KBM Gadgets -->
+        <div onclick="openService('Gadget Non-KBM', 'GADGET')" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-6 group cursor-pointer border hover:border-indigo-500/50">
           <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-500 text-white flex items-center justify-center text-2xl shadow-lg shadow-cyan-500/25">💻</div>
           <div>
             <h3 class="font-extrabold text-cyan-400 text-base group-hover:text-cyan-300">Booking Non-KBM Gadgets</h3>
-            <p class="text-xs text-slate-400 mt-1">Gadget lending services outside KBM.</p>
+            <p class="text-xs text-slate-400 mt-1">Peminjaman Laptop & Chromebook Luar KBM.</p>
           </div>
-          <span class="text-xs font-bold text-cyan-400 flex items-center gap-1">Access Service →</span>
+          <span class="text-xs font-bold text-cyan-400 flex items-center gap-1">Buka Denah Gadget →</span>
         </div>
 
-        <div onclick="switchView('cinema')" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-6 group cursor-pointer border hover:border-indigo-500/50">
+        <!-- 3. Booking PC KBM -->
+        <div onclick="openService('PC KBM', 'PC')" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-6 group cursor-pointer border hover:border-indigo-500/50">
           <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-500 text-white flex items-center justify-center text-2xl shadow-lg shadow-emerald-500/25">🖥️</div>
           <div>
             <h3 class="font-extrabold text-emerald-400 text-base group-hover:text-emerald-300">Booking PC KBM</h3>
-            <p class="text-xs text-slate-400 mt-1">PC lending services for KBM.</p>
+            <p class="text-xs text-slate-400 mt-1">Peminjaman Komputer PC Desktop (26 Unit) KBM.</p>
           </div>
-          <span class="text-xs font-bold text-emerald-400 flex items-center gap-1">Access Service →</span>
+          <span class="text-xs font-bold text-emerald-400 flex items-center gap-1">Buka Denah PC →</span>
         </div>
 
-        <div onclick="switchView('cinema')" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-6 group cursor-pointer border hover:border-indigo-500/50">
+        <!-- 4. Booking PC Non-KBM -->
+        <div onclick="openService('PC Non-KBM', 'PC')" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-6 group cursor-pointer border hover:border-indigo-500/50">
           <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-violet-600 to-purple-500 text-white flex items-center justify-center text-2xl shadow-lg shadow-violet-500/25">🕹️</div>
           <div>
             <h3 class="font-extrabold text-violet-400 text-base group-hover:text-violet-300">Booking PC Non-KBM</h3>
-            <p class="text-xs text-slate-400 mt-1">PC borrowing services outside KBM.</p>
+            <p class="text-xs text-slate-400 mt-1">Peminjaman PC Desktop (26 Unit) Luar Jam KBM.</p>
           </div>
-          <span class="text-xs font-bold text-violet-400 flex items-center gap-1">Access Service →</span>
+          <span class="text-xs font-bold text-violet-400 flex items-center gap-1">Buka Denah PC →</span>
         </div>
       </div>
 
@@ -117,7 +121,7 @@
       </div>
     </div>
 
-    <!-- VIEW 2: DENAH BIOSKOP XXI GRID -->
+    <!-- VIEW 2: DENAH XXI GRID PERANGKAT -->
     <div id="view-cinema" class="hidden space-y-6">
       <div class="relative w-full glass-card rounded-2xl p-4 text-center overflow-hidden shadow-xl">
         <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent"></div>
@@ -128,12 +132,12 @@
       <div class="glass-card rounded-3xl p-6 sm:p-8 shadow-2xl">
         <div class="flex flex-wrap justify-between items-center gap-4 mb-8 border-b border-slate-800/80 pb-5">
           <div>
-            <h2 class="text-lg font-bold text-white">Denah Perangkat XXI Cinema Style</h2>
-            <p class="text-xs text-slate-400">Pilih bangku laptop untuk melakukan peminjaman</p>
+            <h2 id="service-title" class="text-lg font-bold text-white">Denah Perangkat XXI Cinema Style</h2>
+            <p class="text-xs text-slate-400">Pilih bangku perangkat untuk melakukan peminjaman</p>
           </div>
           <div class="flex items-center gap-3">
             <button onclick="openMassBookingModal()" class="px-4 py-2 bg-indigo-600/20 border border-indigo-500/30 hover:bg-indigo-600 text-indigo-300 hover:text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5">
-              <span>⚡</span> Booking Semua Laptop
+              <span>⚡</span> Booking Semua Unit
             </button>
             <div class="flex items-center gap-3 text-xs font-semibold border-l border-slate-800 pl-4 text-slate-400">
               <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Tersedia</span>
@@ -189,7 +193,7 @@
   <div id="mass-booking-modal" class="hidden fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
     <div class="glass-card rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
       <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-        <h3 class="font-extrabold text-base text-white">⚡ Booking Semua Laptop (24 Unit)</h3>
+        <h3 class="font-extrabold text-base text-white">⚡ Booking Semua Unit</h3>
         <button onclick="closeMassModal()" class="text-slate-400 hover:text-white font-bold">✕</button>
       </div>
       <div class="space-y-3">
@@ -225,22 +229,36 @@
 
   <script>
     const MASTER_PIN = "1234";
-    const TOTAL_DEVICES = 24;
     let currentDeviceId = null;
+    let currentCategory = 'GADGET'; // 'GADGET' (LD & CB) or 'PC'
     let selectedSeatId = null;
     let devicesState = {};
 
     function generateFreshDevices() {
       devicesState = {};
-      for (let i = 1; i <= TOTAL_DEVICES; i++) {
-        const id = `LD-${String(i).padStart(2, '0')}`;
-        devicesState[id] = { id, status: 'free', user: '', jampelStart: 1, jampelEnd: 4, endTime: null };
+      if (currentCategory === 'GADGET') {
+        // 6 Laptop DELL (LD-01 s/d LD-06)
+        for (let i = 1; i <= 6; i++) {
+          const id = `LD-${String(i).padStart(2, '0')}`;
+          devicesState[id] = { id, type: 'DELL', status: 'free', user: '', jampelStart: 1, jampelEnd: 4, endTime: null };
+        }
+        // 6 Chromebook (CB-01 s/d CB-06)
+        for (let i = 1; i <= 6; i++) {
+          const id = `CB-${String(i).padStart(2, '0')}`;
+          devicesState[id] = { id, type: 'Chromebook', status: 'free', user: '', jampelStart: 1, jampelEnd: 4, endTime: null };
+        }
+      } else {
+        // 26 PC Desktop (PC-01 s/d PC-26)
+        for (let i = 1; i <= 26; i++) {
+          const id = `PC-${String(i).padStart(2, '0')}`;
+          devicesState[id] = { id, type: 'PC Desktop', status: 'free', user: '', jampelStart: 1, jampelEnd: 4, endTime: null };
+        }
       }
-      localStorage.setItem('labkom_devices', JSON.stringify(devicesState));
+      localStorage.setItem(`labkom_devices_${currentCategory}`, JSON.stringify(devicesState));
     }
 
     function initData() {
-      const saved = localStorage.getItem('labkom_devices');
+      const saved = localStorage.getItem(`labkom_devices_${currentCategory}`);
       if (saved) {
         try { devicesState = JSON.parse(saved); } catch(e) { generateFreshDevices(); }
       } else { generateFreshDevices(); }
@@ -250,7 +268,9 @@
       
       const indicator = document.getElementById('device-indicator');
       if (currentDeviceId) {
-        indicator.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Mode Laptop: <strong class="text-emerald-400 font-bold">${currentDeviceId}</strong>`;
+        indicator.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Mode Perangkat: <strong class="text-emerald-400 font-bold">${currentDeviceId}</strong>`;
+        if (currentDeviceId.startsWith('PC')) currentCategory = 'PC';
+        else currentCategory = 'GADGET';
         switchView('cinema');
       }
 
@@ -259,9 +279,16 @@
     }
 
     function saveData() {
-      localStorage.setItem('labkom_devices', JSON.stringify(devicesState));
+      localStorage.setItem(`labkom_devices_${currentCategory}`, JSON.stringify(devicesState));
       renderSeats();
       checkCurrentDeviceLock();
+    }
+
+    function openService(serviceName, category) {
+      currentCategory = category;
+      document.getElementById('service-title').innerText = `Denah XXI - ${serviceName}`;
+      initData();
+      switchView('cinema');
     }
 
     function renderSeats() {
@@ -275,6 +302,8 @@
         const isMaintenance = dev.status === 'maintenance';
         const isCurrent = currentDeviceId === dev.id;
 
+        const icon = dev.id.startsWith('LD') ? '💻' : dev.id.startsWith('CB') ? '📱' : '🖥️';
+
         seat.className = `seat p-4 rounded-2xl border flex flex-col items-center justify-between cursor-pointer select-none text-center relative min-h-[110px] ${
           isOccupied ? 'bg-rose-950/40 border-rose-500/60 text-rose-100 shadow-lg shadow-rose-950/30' :
           isMaintenance ? 'bg-amber-950/30 border-amber-500/50 text-amber-200 cursor-not-allowed maintenance' :
@@ -284,7 +313,7 @@
         if (!isMaintenance) seat.onclick = () => openBookingModal(dev.id);
 
         seat.innerHTML = `
-          <div class="text-2xl">${isOccupied ? '💻' : isMaintenance ? '🛠️' : '🖥️'}</div>
+          <div class="text-2xl">${icon}</div>
           <div>
             <div class="font-extrabold text-xs tracking-wide">${dev.id}</div>
             <div class="text-[10px] font-medium opacity-70 truncate max-w-[75px] mt-0.5">${isOccupied ? dev.user : isMaintenance ? 'Rusak' : 'Tersedia'}</div>
@@ -327,7 +356,7 @@
       if (end < start) return alert('Jampel selesai salah!');
 
       const durationMinutes = (end - start + 1) * 45;
-      devicesState[selectedSeatId] = { id: selectedSeatId, status: 'occupied', user: name, jampelStart: start, jampelEnd: end, endTime: Date.now() + durationMinutes * 60 * 1000 };
+      devicesState[selectedSeatId] = { ...devicesState[selectedSeatId], status: 'occupied', user: name, jampelStart: start, jampelEnd: end, endTime: Date.now() + durationMinutes * 60 * 1000 };
       saveData();
       closeModal();
     }
@@ -350,12 +379,12 @@
       const durationMinutes = (end - start + 1) * 45;
       const endTime = Date.now() + durationMinutes * 60 * 1000;
 
-      for (let i = 1; i <= TOTAL_DEVICES; i++) {
-        const id = `LD-${String(i).padStart(2, '0')}`;
+      Object.keys(devicesState).forEach(id => {
         if (devicesState[id].status !== 'maintenance') {
-          devicesState[id] = { id, status: 'occupied', user: name, jampelStart: start, jampelEnd: end, endTime };
+          devicesState[id] = { ...devicesState[id], status: 'occupied', user: name, jampelStart: start, jampelEnd: end, endTime };
         }
-      }
+      });
+
       saveData();
       closeMassModal();
     }
@@ -380,7 +409,7 @@
       if (pinInput === MASTER_PIN) {
         document.getElementById('lock-error').classList.add('hidden');
         document.getElementById('unlock-pin').value = '';
-        devicesState[currentDeviceId] = { id: currentDeviceId, status: 'free', user: '', jampelStart: 1, jampelEnd: 4, endTime: null };
+        devicesState[currentDeviceId] = { ...devicesState[currentDeviceId], status: 'free', user: '', jampelStart: 1, jampelEnd: 4, endTime: null };
         saveData();
       } else {
         document.getElementById('lock-error').classList.remove('hidden');
