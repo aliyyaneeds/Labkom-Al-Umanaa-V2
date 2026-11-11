@@ -1,1 +1,144 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Labkom v3.0 - Management System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .seat { transition: all 0.2s ease; }
+    .seat:hover:not(.occupied) { transform: scale(1.08); }
+    @keyframes pulse-red {
+      0%, 100% { background-color: #7f1d1d; }
+      50% { background-color: #dc2626; }
+    }
+    .lock-screen-active { animation: pulse-red 1.5s infinite; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased pb-12">
 
+  <!-- Header Nav -->
+  <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-30 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center font-bold text-xl shadow">🖥️</div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight">Labkom Al-Umanaa v3.0</h1>
+          <p id="device-indicator" class="text-xs text-indigo-400 font-medium">Mode Central Monitor</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="switchTab('client')" id="btn-tab-client" class="px-4 py-2 rounded-lg text-sm font-semibold bg-indigo-600 text-white shadow">🎬 Denah Kursi</button>
+        <button onclick="switchTab('admin')" id="btn-tab-admin" class="px-4 py-2 rounded-lg text-sm font-semibold bg-slate-700 hover:bg-slate-600 text-slate-200">⚙️ Panel Admin</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Lock Screen Overlay (Tampilan saat waktu habis) -->
+  <div id="lock-screen" class="hidden fixed inset-0 z-50 flex flex-col items-center justify-center p-6 text-center text-white backdrop-blur-md">
+    <div class="bg-slate-900/90 border-2 border-red-500 rounded-2xl p-8 max-w-md w-full shadow-2xl">
+      <div class="text-6xl mb-4 animate-bounce">🚨</div>
+      <h2 class="text-2xl font-extrabold text-red-500 mb-2">WAKTU PEMINJAMAN HABIS!</h2>
+      <p class="text-slate-300 text-sm mb-6">Perangkat <span id="lock-device-id" class="font-bold text-amber-400">LD-XX</span> telah mencapai batas durasi Jampel. Harap segera kembalikan ke Petugas Labkom.</p>
+      
+      <div class="space-y-3">
+        <input type="password" id="unlock-pin" placeholder="Masukkan Master PIN Admin" class="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-center font-bold tracking-widest text-lg focus:outline-none focus:border-red-500">
+        <button onclick="attemptUnlock()" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition shadow-lg">BUKA KUNCI PERANGKAT</button>
+      </div>
+      <p id="lock-error" class="text-xs text-red-400 mt-3 hidden">PIN Admin Salah!</p>
+    </div>
+  </div>
+
+  <main class="max-w-7xl mx-auto px-4 mt-6">
+    <!-- View 1: Denah Bioskop / Booking -->
+    <div id="view-client" class="space-y-6">
+      
+      <!-- Screen Indicator -->
+      <div class="relative w-full bg-slate-800 rounded-2xl p-4 text-center border border-slate-700 overflow-hidden shadow-inner">
+        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent"></div>
+        <p class="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-1">Papan Layar Utama / Meja Pengawas</p>
+        <div class="w-3/4 mx-auto h-2 bg-indigo-500/30 rounded-full blur-xs"></div>
+      </div>
+
+      <!-- Cinema Grid Layout -->
+      <div class="bg-slate-800/50 border border-slate-700/60 rounded-2xl p-6 backdrop-blur-sm">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-base font-bold text-slate-200">Denah Laptop & PC Labkom</h2>
+          <div class="flex gap-4 text-xs font-medium">
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-emerald-500"></span> Tersedia</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-rose-500"></span> Aktif (Dipakai)</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-amber-500"></span> Hampir Habis</span>
+          </div>
+        </div>
+
+        <!-- Layout Grid -->
+        <div id="seats-container" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+          <!-- Dynamically Generated Seats -->
+        </div>
+      </div>
+    </div>
+
+    <!-- View 2: Dashboard Admin -->
+    <div id="view-admin" class="hidden space-y-6">
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h2 class="text-xl font-bold text-white">Monitoring Central & Kontrol Utama</h2>
+            <p class="text-xs text-slate-400">Pantau seluruh status Chromebook & Laptop DELL secara terpusat</p>
+          </div>
+          <button onclick="resetAllData()" class="px-4 py-2 bg-rose-600/20 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-semibold hover:bg-rose-600 hover:text-white transition">Reset Semua Status</button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm text-slate-300">
+            <thead class="bg-slate-900/60 text-slate-400 text-xs uppercase tracking-wider">
+              <tr>
+                <th class="px-4 py-3 rounded-l-lg">Kode Device</th>
+                <th class="px-4 py-3">Peminjam</th>
+                <th class="px-4 py-3">Durasi Jampel</th>
+                <th class="px-4 py-3">Sisa Waktu</th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3 rounded-r-lg text-right">Aksi Admin</th>
+              </tr>
+            </thead>
+            <tbody id="admin-table-body" class="divide-y divide-slate-700/50">
+              <!-- Dynamically Generated Table Rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Booking Form -->
+  <div id="booking-modal" class="hidden fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+        <h3 class="font-bold text-lg text-white">Booking Device <span id="modal-seat-id" class="text-indigo-400">LD-01</span></h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-white font-bold">✕</button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Nama Siswa / Peminjam</label>
+          <input type="text" id="input-student-name" placeholder="Contoh: Ahmad Fadil" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 text-sm focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Jampel Mulai</label>
+            <select id="select-jampel-start" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 text-sm focus:outline-none focus:border-indigo-500">
+              <option value="1">Jampel 1 (07:30)</option>
+              <option value="2">Jampel 2 (08:15)</option>
+              <option value="3">Jampel 3 (09:00)</option>
+              <option value="4">Jampel 4 (09:45)</option>
+              <option value="5">Jampel 5 (10:45)</option>
+              <option value="6">Jampel 6 (11:30)</option>
+              <option value="7">Jampel 7 (13:00)</option>
+              <option value="8">Jampel 8 (13:45)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Jampel Selesai</label>
+            <select id="select-jampel-end" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 text-sm focus:outline-none focus:border-indigo-500">
+              <option value="1">Jamp
