@@ -3,232 +3,403 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard - LabKom Al Umanaa</title>
+  <title>Labkom Al-Umanaa - Main System</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .card-hover { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
-    .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05); }
+    .card-3d { transition: all 0.25s ease; }
+    .card-3d:hover { transform: translateY(-6px); }
+    .seat { transition: all 0.2s ease; }
+    .seat:hover:not(.occupied):not(.maintenance) { transform: translateY(-3px); }
+    @keyframes pulse-red { 0%, 100% { background-color: #450a0a; } 50% { background-color: #991b1b; } }
+    .lock-screen-active { animation: pulse-red 1.2s infinite; }
+    .glass-card { background: rgba(30, 41, 59, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased flex flex-col justify-between">
 
-  <!-- Header Nav -->
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
-    <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+  <!-- Header -->
+  <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-30 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 py-3.5 flex flex-wrap justify-between items-center gap-4">
       <div class="flex items-center gap-3">
-        <h1 class="font-extrabold text-xl text-slate-900 tracking-tight">LabKom Al Umanaa</h1>
-        <span class="px-3 py-1 bg-blue-50 text-blue-600 border border-blue-200 rounded-full text-xs font-bold">Admin Panel</span>
+        <div class="w-10 h-10 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-xl flex items-center justify-center font-black text-xl">🖥️</div>
+        <div>
+          <h1 class="font-extrabold text-lg leading-tight text-white">Labkom Al-Umanaa</h1>
+          <p id="device-indicator" class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
+            <span class="w-2 h-2 rounded-full bg-indigo-400"></span> Mode Central Monitor
+          </p>
+        </div>
       </div>
-      <a href="index.html" class="text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition">
-        ← to the dashboard
-      </a>
+      <div class="flex items-center gap-2 bg-slate-900 p-1.5 rounded-xl border border-slate-800">
+        <button type="button" onclick="switchView('menu')" id="btn-nav-menu" class="px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 text-white">🏠 Main Menu</button>
+        <button type="button" onclick="switchView('grid')" id="btn-nav-grid" class="px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white">📋 Denah Perangkat</button>
+        <a href="admin.html" class="px-4 py-2 rounded-lg text-xs font-bold text-rose-400 hover:text-rose-300">⚙️ Admin Panel</a>
+      </div>
     </div>
   </header>
 
-  <!-- Auth Screen -->
-  <div id="auth-container" class="flex-1 flex items-center justify-center p-6">
-    <div class="bg-white border border-slate-200 rounded-3xl p-8 max-w-sm w-full shadow-xl text-center space-y-4">
-      <div class="w-14 h-14 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-center text-2xl mx-auto">🔐</div>
+  <!-- Lock Screen Alarm Overlay -->
+  <div id="lock-screen" class="hidden fixed inset-0 z-50 flex flex-col items-center justify-center p-6 text-center text-white backdrop-blur-xl">
+    <div class="glass-card border-2 border-red-500 rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-4">
+      <div class="w-20 h-20 bg-red-500/20 rounded-2xl flex items-center justify-center text-4xl mx-auto animate-bounce">🚨</div>
       <div>
-        <h2 class="text-lg font-extrabold text-slate-900">Admin Authentication</h2>
-        <p class="text-xs text-slate-500 mt-1">Masukkan Master PIN untuk masuk ke panel pengelolaan.</p>
+        <h2 class="text-2xl font-black text-red-400">WAKTU PEMINJAMAN HABIS!</h2>
+        <p class="text-slate-300 text-xs mt-1">Perangkat <span id="lock-device-id" class="font-bold text-amber-400">LD-XX</span> telah melewati batas sesi KBM.</p>
       </div>
-      <input type="password" id="input-pin" placeholder="Enter PIN (Default: 1234)" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-center font-bold tracking-widest text-slate-800 text-sm focus:outline-none focus:border-blue-500">
-      <button onclick="checkAdminPin()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition shadow-md shadow-blue-500/20">Login to Dashboard</button>
-      <p id="auth-error" class="text-xs text-red-500 font-semibold hidden">PIN Admin Salah!</p>
+      <div class="space-y-3 pt-2">
+        <input type="password" id="unlock-pin" placeholder="Masukkan Master PIN Admin" class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-center font-bold tracking-widest text-lg text-white">
+        <button type="button" onclick="attemptUnlock()" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-sm">BUKA KUNCI PERANGKAT</button>
+      </div>
+      <p id="lock-error" class="text-xs text-red-400 font-semibold hidden">⚠️ PIN Admin Salah!</p>
     </div>
   </div>
 
-  <!-- Admin Dashboard Main Menu -->
-  <main id="admin-main" class="hidden flex-1 max-w-5xl mx-auto px-6 py-12 w-full space-y-10">
+  <!-- Main -->
+  <main class="max-w-7xl mx-auto px-4 py-8 flex-1 w-full">
     
-    <div class="text-center space-y-2">
-      <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">Welcome, Admin! 👋</h2>
-      <p class="text-sm text-slate-500">Please select the panel menu below to manage the lab.</p>
+    <!-- View 1: Menu -->
+    <div id="view-menu" class="space-y-10 py-6">
+      <div class="text-center space-y-2">
+        <h2 class="text-3xl font-black text-white">Labkom Main Menu</h2>
+        <p class="text-xs text-slate-400">Silakan pilih kategori layanan peminjaman perangkat.</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div onclick="openService('Gadget KBM', 'GADGET')" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-5 cursor-pointer border hover:border-indigo-500">
+          <div class="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-xl">📱</div>
+          <div>
+            <h3 class="font-extrabold text-blue-400 text-base">Booking Gadget KBM</h3>
+            <p class="text-xs text-slate-400 mt-1">Laptop DELL & Chromebook saat jam KBM.</p>
+          </div>
+          <span class="text-xs font-bold text-blue-400">Buka Denah Gadget →</span>
+        </div>
+
+        <div onclick="openService('Gadget Non-KBM', 'GADGET')" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-5 cursor-pointer border hover:border-indigo-500">
+          <div class="w-12 h-12 rounded-2xl bg-cyan-500 text-white flex items-center justify-center text-xl">💻</div>
+          <div>
+            <h3 class="font-extrabold text-cyan-400 text-base">Booking Non-KBM Gadgets</h3>
+            <p class="text-xs text-slate-400 mt-1">Laptop & Chromebook di luar jam KBM.</p>
+          </div>
+          <span class="text-xs font-bold text-cyan-400">Buka Denah Gadget →</span>
+        </div>
+
+        <div onclick="openService('PC KBM', 'PC')" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-5 cursor-pointer border hover:border-indigo-500">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-xl">🖥️</div>
+          <div>
+            <h3 class="font-extrabold text-emerald-400 text-base">Booking PC KBM</h3>
+            <p class="text-xs text-slate-400 mt-1">Komputer PC Desktop saat jam KBM.</p>
+          </div>
+          <span class="text-xs font-bold text-emerald-400">Buka Denah PC →</span>
+        </div>
+
+        <div onclick="openService('PC Non-KBM', 'PC')" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-5 cursor-pointer border hover:border-indigo-500">
+          <div class="w-12 h-12 rounded-2xl bg-violet-600 text-white flex items-center justify-center text-xl">🕹️</div>
+          <div>
+            <h3 class="font-extrabold text-violet-400 text-base">Booking PC Non-KBM</h3>
+            <p class="text-xs text-slate-400 mt-1">Komputer PC Desktop di luar jam KBM.</p>
+          </div>
+          <span class="text-xs font-bold text-violet-400">Buka Denah PC →</span>
+        </div>
+      </div>
+
+      <div class="max-w-xs mx-auto pt-2">
+        <a href="admin.html" class="card-3d glass-card rounded-3xl p-5 flex flex-col items-center text-center space-y-2 border border-rose-500/30 hover:border-rose-500">
+          <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-lg">⚙️</div>
+          <div>
+            <h3 class="font-bold text-rose-400 text-sm">Panel Admin</h3>
+            <p class="text-[11px] text-slate-400">Kelola Booking, Perangkat Rusak & Alarm</p>
+          </div>
+        </a>
+      </div>
     </div>
 
-    <!-- 5 Cards Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      
-      <!-- Card 1: Data Booking -->
-      <div onclick="showSection('booking')" class="card-hover bg-white border border-slate-200/80 rounded-2xl p-6 cursor-pointer flex flex-col items-center text-center space-y-3 shadow-xs">
-        <div class="text-4xl">📅</div>
-        <h3 class="font-bold text-blue-600 text-base">Data Booking</h3>
-        <p class="text-xs text-slate-400 leading-relaxed">View the entire queue of lab borrowing & delete completed schedules.</p>
+    <!-- View 2: Denah Perangkat -->
+    <div id="view-grid" class="hidden space-y-6">
+      <div class="glass-card rounded-2xl p-3.5 text-center">
+        <p class="text-[11px] font-bold uppercase tracking-widest text-indigo-400">Papan Layar Utama / Meja Pengawas Labkom</p>
       </div>
 
-      <!-- Card 2: Broken Devices -->
-      <div onclick="showSection('broken')" class="card-hover bg-white border border-slate-200/80 rounded-2xl p-6 cursor-pointer flex flex-col items-center text-center space-y-3 shadow-xs">
-        <div class="text-4xl">🛠️</div>
-        <h3 class="font-bold text-amber-600 text-base">Broken Devices & Locks</h3>
-        <p class="text-xs text-slate-400 leading-relaxed">Block corrupted tool IDs & access keys from borrowing.</p>
-      </div>
+      <div class="glass-card rounded-3xl p-6 sm:p-8 shadow-2xl">
+        <div class="flex flex-wrap justify-between items-center gap-4 mb-6 border-b border-slate-800 pb-4">
+          <div>
+            <h2 id="service-title" class="text-lg font-bold text-white">Denah Tata Letak Perangkat</h2>
+            <p class="text-xs text-slate-400">Klik perangkat yang tersedia untuk meminjam</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-3">
+            <button type="button" onclick="openMassBookingModal()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold">⚡ Booking Semua Unit</button>
+            <div class="flex items-center gap-3 text-xs font-semibold text-slate-400">
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Tersedia</span>
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Dipakai</span>
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Rusak</span>
+            </div>
+          </div>
+        </div>
 
-      <!-- Card 3: Change Time/Schedule -->
-      <div onclick="showSection('schedule')" class="card-hover bg-white border border-slate-200/80 rounded-2xl p-6 cursor-pointer flex flex-col items-center text-center space-y-3 shadow-xs">
-        <div class="text-4xl">⏰</div>
-        <h3 class="font-bold text-emerald-600 text-base">Change Time/Schedule</h3>
-        <p class="text-xs text-slate-400 leading-relaxed">Flexibly manage the availability of laboratory KBM hours.</p>
+        <div id="seats-container" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3.5"></div>
       </div>
-
-      <!-- Card 4: Manage/Add Tools -->
-      <div onclick="showSection('tools')" class="card-hover bg-white border border-slate-200/80 rounded-2xl p-6 cursor-pointer flex flex-col items-center text-center space-y-3 shadow-xs">
-        <div class="text-4xl">💻</div>
-        <h3 class="font-bold text-purple-600 text-base">Manage/Add Tools</h3>
-        <p class="text-xs text-slate-400 leading-relaxed">Stock management of DELL, Chromebook, and PC units.</p>
-      </div>
-
-      <!-- Card 5: Device Controller Alarm -->
-      <div onclick="showSection('controller')" class="card-hover bg-white border border-blue-200 bg-blue-50/30 rounded-2xl p-6 cursor-pointer flex flex-col items-center text-center space-y-3 shadow-xs">
-        <div class="text-4xl">🚨</div>
-        <h3 class="font-bold text-indigo-600 text-base">Device Alarm Controller</h3>
-        <p class="text-xs text-slate-400 leading-relaxed">Copy device connection link for laptop timer & lock-screen alarm.</p>
-      </div>
-
     </div>
-
-    <!-- Dynamic Section Viewer -->
-    <div id="section-detail" class="hidden bg-white border border-slate-200 rounded-2xl p-6 space-y-4 shadow-sm">
-      <div class="flex justify-between items-center border-b pb-3">
-        <h3 id="section-title" class="font-bold text-base text-slate-800">Detail Panel</h3>
-        <button onclick="closeSection()" class="text-xs font-semibold px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-600">Back to Cards</button>
-      </div>
-      <div id="section-content" class="text-xs text-slate-600"></div>
-    </div>
-
   </main>
+
+  <!-- Modal Single Booking -->
+  <div id="booking-modal" class="hidden fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-card rounded-3xl p-6 max-w-md w-full space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <h3 class="font-extrabold text-base text-white">Booking <span id="modal-seat-id" class="text-indigo-400">LD-01</span></h3>
+        <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-white font-bold">✕</button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Nama Siswa / Peminjam</label>
+          <input type="text" id="input-student-name" placeholder="Contoh: Ahmad Fadil" class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 text-xs">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Pilih Sesi Jam KBM</label>
+          <select id="select-jampel" class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 text-xs"></select>
+        </div>
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button type="button" onclick="closeModal()" class="w-1/2 py-2.5 bg-slate-800 rounded-xl text-slate-300 text-xs font-semibold">Batal</button>
+        <button type="button" onclick="confirmBooking()" class="w-1/2 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold">Konfirmasi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Mass Booking -->
+  <div id="mass-booking-modal" class="hidden fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-card rounded-3xl p-6 max-w-md w-full space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <h3 class="font-extrabold text-base text-white">⚡ Booking Semua Unit</h3>
+        <button type="button" onclick="closeMassModal()" class="text-slate-400 hover:text-white font-bold">✕</button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Nama Kelas / Kegiatan</label>
+          <input type="text" id="input-mass-name" placeholder="Contoh: Kelas XI-IPA 1" class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 text-xs">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Pilih Sesi Jam KBM</label>
+          <select id="select-mass-jampel" class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 text-xs"></select>
+        </div>
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button type="button" onclick="closeMassModal()" class="w-1/2 py-2.5 bg-slate-800 rounded-xl text-slate-300 text-xs font-semibold">Batal</button>
+        <button type="button" onclick="confirmMassBooking()" class="w-1/2 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold">Booking Semua</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="py-4 text-center text-xs text-slate-500 border-t border-slate-900">© Labkom Al-Umanaa System.</footer>
 
   <script>
     const MASTER_PIN = "1234";
+    let currentDeviceId = null;
+    let currentCategory = 'GADGET';
+    let selectedSeatId = null;
+    let devicesState = {};
+    let audioCtx = null;
 
-    function checkAdminPin() {
-      const pin = document.getElementById('input-pin').value;
-      if (pin === MASTER_PIN) {
-        document.getElementById('auth-container').classList.add('hidden');
-        document.getElementById('admin-main').classList.remove('hidden');
-      } else {
-        document.getElementById('auth-error').classList.remove('hidden');
+    function getSchedules() {
+      let sched = null;
+      try { sched = JSON.parse(localStorage.getItem('labkom_schedules')); } catch(e) {}
+      if (!sched) {
+        sched = {
+          'KBM-1': { label: '07:00 - 08:20', minutes: 80 },
+          'KBM-2': { label: '08:50 - 10:00', minutes: 70 },
+          'KBM-3': { label: '10:00 - 11:20', minutes: 80 },
+          'KBM-4': { label: '12:40 - 14:00', minutes: 80 }
+        };
+        localStorage.setItem('labkom_schedules', JSON.stringify(sched));
       }
+      return sched;
     }
 
-    function showSection(type) {
-      const detail = document.getElementById('section-detail');
-      const title = document.getElementById('section-title');
-      const content = document.getElementById('section-content');
-      detail.classList.remove('hidden');
+    function populateScheduleDropdowns() {
+      const sched = getSchedules();
+      const opts = Object.keys(sched).map(k => `<option value="${k}">${k} (${sched[k].label})</option>`).join('');
+      document.getElementById('select-jampel').innerHTML = opts;
+      document.getElementById('select-mass-jampel').innerHTML = opts;
+    }
 
-      // Inisialisasi data default jika belum pernah membuka index.html
-      let savedGadget = JSON.parse(localStorage.getItem('labkom_devices_GADGET') || 'null');
-      if (!savedGadget) {
-        savedGadget = {};
-        for (let i = 1; i <= 6; i++) savedGadget[`LD-${String(i).padStart(2, '0')}`] = { id: `LD-${String(i).padStart(2, '0')}`, status: 'free', user: '', jampel: '', endTime: null };
-        for (let i = 1; i <= 6; i++) savedGadget[`CB-${String(i).padStart(2, '0')}`] = { id: `CB-${String(i).padStart(2, '0')}`, status: 'free', user: '', jampel: '', endTime: null };
-        localStorage.setItem('labkom_devices_GADGET', JSON.stringify(savedGadget));
+    function initData() {
+      const key = `labkom_devices_${currentCategory}`;
+      let saved = null;
+      try { saved = JSON.parse(localStorage.getItem(key)); } catch(e) {}
+      if (!saved || typeof saved !== 'object' || Object.keys(saved).length === 0) {
+        saved = {};
+        if (currentCategory === 'GADGET') {
+          for (let i = 1; i <= 6; i++) saved[`LD-${String(i).padStart(2, '0')}`] = { id: `LD-${String(i).padStart(2, '0')}`, status: 'free', user: '', jampel: '', endTime: null };
+          for (let i = 1; i <= 6; i++) saved[`CB-${String(i).padStart(2, '0')}`] = { id: `CB-${String(i).padStart(2, '0')}`, status: 'free', user: '', jampel: '', endTime: null };
+        } else {
+          for (let i = 1; i <= 26; i++) saved[`PC-${String(i).padStart(2, '0')}`] = { id: `PC-${String(i).padStart(2, '0')}`, status: 'free', user: '', jampel: '', endTime: null };
+        }
+        localStorage.setItem(key, JSON.stringify(saved));
+      }
+      devicesState = saved;
+
+      const urlParams = new URLSearchParams(window.location.search);
+      currentDeviceId = urlParams.get('device');
+      if (currentDeviceId) {
+        document.getElementById('device-indicator').innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Mode Perangkat: <strong class="text-emerald-400">${currentDeviceId}</strong>`;
+        const targetCat = currentDeviceId.startsWith('PC') ? 'PC' : 'GADGET';
+        if (currentCategory !== targetCat) {
+          currentCategory = targetCat;
+          return initData();
+        }
+        switchView('grid');
       }
 
-      let savedPC = JSON.parse(localStorage.getItem('labkom_devices_PC') || 'null');
-      if (!savedPC) {
-        savedPC = {};
-        for (let i = 1; i <= 26; i++) savedPC[`PC-${String(i).padStart(2, '0')}`] = { id: `PC-${String(i).padStart(2, '0')}`, status: 'free', user: '', jampel: '', endTime: null };
-        localStorage.setItem('labkom_devices_PC', JSON.stringify(savedPC));
-      }
+      populateScheduleDropdowns();
+      renderSeats();
+      checkCurrentDeviceLock();
+    }
 
-      const allDevices = { ...savedGadget, ...savedPC };
+    function saveData() {
+      localStorage.setItem(`labkom_devices_${currentCategory}`, JSON.stringify(devicesState));
+      renderSeats();
+      checkCurrentDeviceLock();
+    }
 
-      if (type === 'booking') {
-        title.innerText = "📅 Data Booking Active Queue";
-        let rows = Object.values(allDevices).filter(d => d.status === 'occupied').map(d => `
-          <tr class="border-b">
-            <td class="py-2.5 font-bold text-indigo-600">${d.id}</td>
-            <td class="py-2.5">${d.user}</td>
-            <td class="py-2.5">${d.jampel || '-'}</td>
-            <td class="py-2.5 text-right"><button onclick="unlockDev('${d.id}')" class="px-2.5 py-1 bg-red-100 text-red-600 font-bold rounded">Reset Booking</button></td>
-          </tr>
-        `).join('');
-        content.innerHTML = `<table class="w-full text-left"><thead><tr class="border-b font-bold text-slate-500"><th class="pb-2">ID</th><th class="pb-2">Peminjam</th><th class="pb-2">Sesi KBM</th><th class="pb-2 text-right">Aksi</th></tr></thead><tbody>${rows || '<tr><td colspan="4" class="py-6 text-center text-slate-400">Tidak ada peminjaman aktif.</td></tr>'}</tbody></table>`;
-      } 
-      else if (type === 'broken') {
-        title.innerText = "🛠️ Broken Devices & Lock Management";
-        let rows = Object.values(allDevices).map(d => `
-          <tr class="border-b">
-            <td class="py-2.5 font-bold">${d.id}</td>
-            <td class="py-2.5">${d.status === 'maintenance' ? '<span class="px-2 py-0.5 bg-amber-100 text-amber-700 font-bold rounded">RUSAK / MAINTENANCE</span>' : '<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 font-semibold">NORMAL</span>'}</td>
-            <td class="py-2.5 text-right"><button onclick="toggleBroken('${d.id}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded">${d.status === 'maintenance' ? 'Set Normal' : 'Set Rusak'}</button></td>
-          </tr>
-        `).join('');
-        content.innerHTML = `<table class="w-full text-left"><thead><tr class="border-b font-bold text-slate-500"><th class="pb-2">Kode Device</th><th class="pb-2">Status</th><th class="pb-2 text-right">Aksi Admin</th></tr></thead><tbody>${rows}</tbody></table>`;
-      }
-      else if (type === 'schedule') {
-        title.innerText = "⏰ Change Time / Jam KBM Schedule";
-        content.innerHTML = `
-          <div class="space-y-2">
-            <p><strong>KBM-1:</strong> 07:00 - 08:20</p>
-            <p><strong>KBM-2:</strong> 08:50 - 10:00</p>
-            <p><strong>KBM-3:</strong> 10:00 - 11:20</p>
-            <p><strong>KBM-4:</strong> 12:40 - 14:00</p>
+    function openService(serviceName, category) {
+      currentCategory = category;
+      document.getElementById('service-title').innerText = `Denah Perangkat - ${serviceName}`;
+      initData();
+      switchView('grid');
+    }
+
+    function renderSeats() {
+      const container = document.getElementById('seats-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      Object.values(devicesState).forEach(dev => {
+        const seat = document.createElement('div');
+        const isOccupied = dev.status === 'occupied';
+        const isMaintenance = dev.status === 'maintenance';
+        const isCurrent = currentDeviceId === dev.id;
+        const icon = dev.id.startsWith('LD') ? '💻' : dev.id.startsWith('CB') ? '📱' : '🖥️';
+
+        seat.className = `seat p-4 rounded-2xl border flex flex-col items-center justify-between select-none text-center min-h-[110px] ${
+          isOccupied ? 'bg-rose-950/50 border-rose-500/60 text-rose-100 cursor-not-allowed occupied' :
+          isMaintenance ? 'bg-amber-950/40 border-amber-500/60 text-amber-200 cursor-not-allowed maintenance' :
+          'bg-slate-900/70 border-slate-800 text-slate-200 hover:border-indigo-500 cursor-pointer'
+        } ${isCurrent ? 'ring-2 ring-emerald-400' : ''}`;
+
+        if (!isOccupied && !isMaintenance) seat.onclick = () => openBookingModal(dev.id);
+
+        seat.innerHTML = `
+          <div class="text-2xl">${isMaintenance ? '🛠️' : icon}</div>
+          <div>
+            <div class="font-extrabold text-xs">${dev.id}</div>
+            <div class="text-[10px] opacity-75 truncate max-w-[80px] mt-0.5">${isOccupied ? dev.user : isMaintenance ? 'Rusak' : 'Tersedia'}</div>
           </div>
+          ${isOccupied ? `<span class="px-2 py-0.5 bg-rose-500/20 text-rose-300 rounded text-[9px] font-bold">${dev.jampel}</span>` : isMaintenance ? `<span class="px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded text-[9px] font-bold">Terkunci</span>` : '<span class="text-[9px] text-emerald-400 font-semibold">Ready</span>'}
         `;
-      }
-      else if (type === 'tools') {
-        title.innerText = "💻 Manage Tools Stock Overview";
-        content.innerHTML = `
-          <ul class="space-y-2 list-disc pl-5 text-sm">
-            <li><strong>Laptop DELL:</strong> 6 Unit (LD-01 s/d LD-06)</li>
-            <li><strong>Chromebook:</strong> 6 Unit (CB-01 s/d CB-06)</li>
-            <li><strong>PC Desktop:</strong> 26 Unit (PC-01 s/d PC-26)</li>
-            <li class="pt-2 text-indigo-600 font-bold">Total Terdaftar: 38 Unit Perangkat</li>
-          </ul>
-        `;
-      }
-      else if (type === 'controller') {
-        title.innerText = "🚨 Device Controller & Alarm Links";
-        let rows = Object.values(allDevices).map(d => {
-          let url = `${window.location.origin}${window.location.pathname.replace('admin.html', 'index.html')}?device=${d.id}`;
-          return `
-            <tr class="border-b">
-              <td class="py-2.5 font-bold text-indigo-600">${d.id}</td>
-              <td class="py-2.5 truncate max-w-[200px] text-slate-400 font-mono text-[11px]">${url}</td>
-              <td class="py-2.5 text-right"><button onclick="copyUrl('${url}')" class="px-2.5 py-1 bg-indigo-50 border border-indigo-200 text-indigo-600 font-bold rounded hover:bg-indigo-100">📋 Copy Link Device</button></td>
-            </tr>
-          `;
-        }).join('');
-        content.innerHTML = `<p class="mb-3 text-slate-500">Salin link di bawah ini lalu buka di browser laptop target untuk mengaktifkan mode kunci & alarm otomatis saat waktu KBM habis:</p><table class="w-full text-left"><thead><tr class="border-b font-bold text-slate-500"><th class="pb-2">Device</th><th class="pb-2">Link Controller</th><th class="pb-2 text-right">Aksi</th></tr></thead><tbody>${rows}</tbody></table>`;
+        container.appendChild(seat);
+      });
+    }
+
+    function switchView(view) {
+      document.getElementById('view-menu').classList.toggle('hidden', view !== 'menu');
+      document.getElementById('view-grid').classList.toggle('hidden', view === 'menu');
+      document.getElementById('btn-nav-menu').className = view === 'menu' ? 'px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 text-white' : 'px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white';
+      document.getElementById('btn-nav-grid').className = view !== 'menu' ? 'px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 text-white' : 'px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white';
+    }
+
+    function openBookingModal(id) {
+      selectedSeatId = id;
+      document.getElementById('modal-seat-id').innerText = id;
+      document.getElementById('input-student-name').value = '';
+      populateScheduleDropdowns();
+      document.getElementById('booking-modal').classList.remove('hidden');
+    }
+
+    function closeModal() { document.getElementById('booking-modal').classList.add('hidden'); }
+
+    function confirmBooking() {
+      const name = document.getElementById('input-student-name').value.trim();
+      const jampelKey = document.getElementById('select-jampel').value;
+      if (!name) return alert('Harap isi nama peminjam!');
+
+      const sched = getSchedules();
+      const durationMinutes = sched[jampelKey] ? sched[jampelKey].minutes : 80;
+      devicesState[selectedSeatId] = { ...devicesState[selectedSeatId], status: 'occupied', user: name, jampel: jampelKey, endTime: Date.now() + durationMinutes * 60 * 1000 };
+      saveData();
+      closeModal();
+    }
+
+    function openMassBookingModal() {
+      document.getElementById('input-mass-name').value = '';
+      populateScheduleDropdowns();
+      document.getElementById('mass-booking-modal').classList.remove('hidden');
+    }
+
+    function closeMassModal() { document.getElementById('mass-booking-modal').classList.add('hidden'); }
+
+    function confirmMassBooking() {
+      const name = document.getElementById('input-mass-name').value.trim();
+      const jampelKey = document.getElementById('select-mass-jampel').value;
+      if (!name) return alert('Harap isi nama kelas/kegiatan!');
+
+      const sched = getSchedules();
+      const durationMinutes = sched[jampelKey] ? sched[jampelKey].minutes : 80;
+      const endTime = Date.now() + durationMinutes * 60 * 1000;
+
+      Object.keys(devicesState).forEach(id => {
+        if (devicesState[id].status === 'free') {
+          devicesState[id] = { ...devicesState[id], status: 'occupied', user: name, jampel: jampelKey, endTime };
+        }
+      });
+      saveData();
+      closeMassModal();
+    }
+
+    function playBeep() {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        osc.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.15);
+      } catch(e) {}
+    }
+
+    function checkCurrentDeviceLock() {
+      if (!currentDeviceId) return;
+      const cat = currentDeviceId.startsWith('PC') ? 'PC' : 'GADGET';
+      const latest = JSON.parse(localStorage.getItem(`labkom_devices_${cat}`) || '{}');
+      const dev = latest[currentDeviceId];
+      if (!dev) return;
+
+      const lockOverlay = document.getElementById('lock-screen');
+      document.getElementById('lock-device-id').innerText = currentDeviceId;
+
+      if (dev.status === 'occupied' && dev.endTime && Date.now() >= dev.endTime) {
+        lockOverlay.classList.remove('hidden');
+        document.body.classList.add('lock-screen-active');
+        playBeep();
+      } else {
+        lockOverlay.classList.add('hidden');
+        document.body.classList.remove('lock-screen-active');
       }
     }
 
-    function closeSection() {
-      document.getElementById('section-detail').classList.add('hidden');
-    }
-
-    function copyUrl(url) {
-      navigator.clipboard.writeText(url);
-      alert('Link Device Controller berhasil disalin!\nBuka link ini di browser laptop target.');
-    }
-
-    function toggleBroken(id) {
-      const key = id.startsWith('PC') ? 'labkom_devices_PC' : 'labkom_devices_GADGET';
-      let saved = JSON.parse(localStorage.getItem(key) || '{}');
-      if (saved[id]) {
-        saved[id].status = saved[id].status === 'maintenance' ? 'free' : 'maintenance';
-        localStorage.setItem(key, JSON.stringify(saved));
-        showSection('broken');
+    function attemptUnlock() {
+      if (document.getElementById('unlock-pin').value === MASTER_PIN) {
+        document.getElementById('lock-error').classList.add('hidden');
+        document.getElementById('unlock-pin').value = '';
+        devicesState[currentDeviceId] = { ...devicesState[currentDeviceId], status: 'free', user: '', jampel: '', endTime: null };
+        saveData();
+      } else {
+        document.getElementById('lock-error').classList.remove('hidden');
       }
     }
 
-    function unlockDev(id) {
-      const key = id.startsWith('PC') ? 'labkom_devices_PC' : 'labkom_devices_GADGET';
-      let saved = JSON.parse(localStorage.getItem(key) || '{}');
-      if (saved[id]) {
-        saved[id].status = 'free';
-        saved[id].user = '';
-        saved[id].jampel = '';
-        saved[id].endTime = null;
-        localStorage.setItem(key, JSON.stringify(saved));
-        showSection('booking');
-      }
-    }
+    window.addEventListener('storage', initData);
+    setInterval(checkCurrentDeviceLock, 2000);
+    initData();
   </script>
 </body>
 </html>
