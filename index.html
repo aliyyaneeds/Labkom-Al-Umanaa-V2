@@ -63,7 +63,7 @@
       <div class="text-center space-y-3">
         <h2 class="text-3xl font-black text-white">Labkom Main Menu</h2>
         
-        <!-- Keterangan Waktu & Pekan Aktif (Tampil di Dashboard) -->
+        <!-- Keterangan Tanggal & Pekan Per Bulan -->
         <div class="inline-flex flex-wrap items-center justify-center gap-3 px-5 py-2.5 rounded-2xl bg-slate-900/90 border border-indigo-500/30 shadow-lg">
           <span id="live-date-display" class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
             📅 Memuat tanggal...
@@ -231,18 +231,13 @@
         year: 'numeric'
       });
 
-      // Cek apakah Admin sudah mengatur Pekan secara manual, jika belum hitung otomatis pekan dalam bulan/kalender
-      let savedWeek = localStorage.getItem('labkom_active_week');
-      if (!savedWeek) {
-        const startOfYear = new Date(now.getFullYear(), 0, 1);
-        const days = Math.floor((now - startOfYear) / (24 * 60 * 60 * 1000));
-        savedWeek = Math.ceil((days + startOfYear.getDay() + 1) / 7);
-      }
+      // Hitung otomatis pekan ke-berapa dalam bulan berjalan (1 - 5)
+      const weekOfMonth = Math.ceil(now.getDate() / 7);
 
       const dateEl = document.getElementById('live-date-display');
       const weekEl = document.getElementById('live-week-display');
       if (dateEl) dateEl.innerText = `📅 ${dateStr}`;
-      if (weekEl) weekEl.innerText = `🗓️ Pekan ke-${savedWeek}`;
+      if (weekEl) weekEl.innerText = `🗓️ Pekan ke-${weekOfMonth}`;
     }
 
     function getSchedules() {
