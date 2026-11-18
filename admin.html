@@ -43,7 +43,7 @@
   <main id="admin-main" class="hidden flex-1 max-w-5xl mx-auto px-6 py-10 w-full space-y-8">
     <div class="text-center space-y-1">
       <h2 class="text-2xl font-extrabold text-slate-900">Panel Pengelolaan Labkom</h2>
-      <p class="text-xs text-slate-500">Pilih menu di bawah untuk mengelola booking, unit rusak, jadwal, unit baru, atau alarm.</p>
+      <p class="text-xs text-slate-500">Pilih menu di bawah untuk mengelola booking, unit rusak, jadwal & pekan, unit baru, atau alarm.</p>
     </div>
 
     <!-- 5 Menu Cards -->
@@ -63,7 +63,7 @@
       <button type="button" onclick="showSection('schedule')" class="card-hover bg-white border border-slate-200 hover:border-emerald-400 rounded-2xl p-5 flex flex-col items-center text-center space-y-2 shadow-sm">
         <div class="text-3xl">⏰</div>
         <h3 class="font-bold text-emerald-600 text-sm">Change Time/Schedule</h3>
-        <p class="text-[11px] text-slate-400">Ubah jam & durasi sesi KBM-1 sampai KBM-4.</p>
+        <p class="text-[11px] text-slate-400">Atur Pekan ke-berapa & jam sesi KBM-1 sampai KBM-4.</p>
       </button>
 
       <button type="button" onclick="showSection('tools')" class="card-hover bg-white border border-slate-200 hover:border-purple-400 rounded-2xl p-5 flex flex-col items-center text-center space-y-2 shadow-sm">
@@ -133,6 +133,17 @@
       return sched;
     }
 
+    function getCurrentWeek() {
+      let w = localStorage.getItem('labkom_active_week');
+      if (!w) {
+        const now = new Date();
+        const startOfYear = new Date(now.getFullYear(), 0, 1);
+        const days = Math.floor((now - startOfYear) / (24 * 60 * 60 * 1000));
+        w = Math.ceil((days + startOfYear.getDay() + 1) / 7);
+      }
+      return w;
+    }
+
     function showSection(type) {
       const detail = document.getElementById('section-detail');
       const title = document.getElementById('section-title');
@@ -178,8 +189,9 @@
         content.innerHTML = `<table class="w-full text-left"><thead><tr class="border-b text-slate-500"><th class="pb-2">Kode</th><th class="pb-2">Status</th><th class="pb-2 text-right">Aksi</th></tr></thead><tbody>${rows}</tbody></table>`;
       }
       else if (type === 'schedule') {
-        title.innerText = "⏰ Change Time / Schedule";
+        title.innerText = "⏰ Atur Pekan Aktif & Jadwal KBM";
         const sched = getSchedules();
+        const currentWeek = getCurrentWeek();
         const rows = Object.keys(sched).map(k => `
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 items-center p-3 bg-slate-50 border rounded-xl">
             <strong class="text-slate-800">${k}</strong>
@@ -191,8 +203,18 @@
           </div>
         `).join('');
         content.innerHTML = `
+          <div class="p-4 bg-indigo-50 border border-indigo-200 rounded-xl mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <strong class="text-indigo-900 block">🗓️ Pengaturan Pekan Ke-Berapa (Tampil di Dashboard)</strong>
+              <span class="text-indigo-700 text-[11px]">Ubah angka pekan di samping sesuai kalender akademik sekolah.</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-indigo-900">Pekan ke-</span>
+              <input type="number" id="input-active-week" value="${currentWeek}" min="1" max="53" class="w-20 px-3 py-1.5 border border-indigo-300 rounded-lg bg-white font-bold text-center text-indigo-900">
+            </div>
+          </div>
           <div class="space-y-3 mb-4">${rows}</div>
-          <button type="button" onclick="saveSchedules()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl">Simpan Perubahan Jadwal</button>
+          <button type="button" onclick="saveSchedules()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl">Simpan Pekan & Jadwal KBM</button>
         `;
       }
       else if (type === 'tools') {
@@ -275,6 +297,11 @@
     }
 
     function saveSchedules() {
+      const weekVal = parseInt(document.getElementById('input-active-week').value);
+      if (weekVal && weekVal > 0) {
+        localStorage.setItem('labkom_active_week', weekVal);
+      }
+
       const sched = getSchedules();
       Object.keys(sched).forEach(k => {
         const label = document.getElementById(`sched-label-${k}`).value.trim();
@@ -283,7 +310,7 @@
         if (mins > 0) sched[k].minutes = mins;
       });
       localStorage.setItem('labkom_schedules', JSON.stringify(sched));
-      alert('Jadwal KBM berhasil diperbarui!');
+      alert('Pekan aktif & Jadwal KBM berhasil diperbarui!');
     }
 
     function addNewDevice() {
