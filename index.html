@@ -78,16 +78,18 @@
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div onclick="openService('Gadget KBM', 'GADGET')" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-5 cursor-pointer border hover:border-indigo-500">
+        <!-- Card 1: Booking Gadget KBM -->
+        <div id="card-gadget-kbm" onclick="openService('Gadget KBM', 'GADGET', true)" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-5 cursor-pointer border hover:border-indigo-500">
           <div class="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-xl">📱</div>
           <div>
             <h3 class="font-extrabold text-blue-400 text-base">Booking Gadget KBM</h3>
-            <p class="text-xs text-slate-400 mt-1">Laptop DELL & Chromebook saat jam KBM.</p>
+            <p id="desc-gadget-kbm" class="text-xs text-slate-400 mt-1">Laptop DELL & Chromebook saat jam KBM.</p>
           </div>
-          <span class="text-xs font-bold text-blue-400">Buka Denah Gadget →</span>
+          <span id="action-gadget-kbm" class="text-xs font-bold text-blue-400">Buka Denah Gadget →</span>
         </div>
 
-        <div onclick="openService('Gadget Non-KBM', 'GADGET')" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-5 cursor-pointer border hover:border-indigo-500">
+        <!-- Card 2: Booking Non-KBM Gadgets -->
+        <div onclick="openService('Gadget Non-KBM', 'GADGET', false)" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-5 cursor-pointer border hover:border-indigo-500">
           <div class="w-12 h-12 rounded-2xl bg-cyan-500 text-white flex items-center justify-center text-xl">💻</div>
           <div>
             <h3 class="font-extrabold text-cyan-400 text-base">Booking Non-KBM Gadgets</h3>
@@ -96,16 +98,18 @@
           <span class="text-xs font-bold text-cyan-400">Buka Denah Gadget →</span>
         </div>
 
-        <div onclick="openService('PC KBM', 'PC')" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-5 cursor-pointer border hover:border-indigo-500">
+        <!-- Card 3: Booking PC KBM -->
+        <div id="card-pc-kbm" onclick="openService('PC KBM', 'PC', true)" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-5 cursor-pointer border hover:border-indigo-500">
           <div class="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-xl">🖥️</div>
           <div>
             <h3 class="font-extrabold text-emerald-400 text-base">Booking PC KBM</h3>
-            <p class="text-xs text-slate-400 mt-1">Komputer PC Desktop saat jam KBM.</p>
+            <p id="desc-pc-kbm" class="text-xs text-slate-400 mt-1">Komputer PC Desktop saat jam KBM.</p>
           </div>
-          <span class="text-xs font-bold text-emerald-400">Buka Denah PC →</span>
+          <span id="action-pc-kbm" class="text-xs font-bold text-emerald-400">Buka Denah PC →</span>
         </div>
 
-        <div onclick="openService('PC Non-KBM', 'PC')" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-5 cursor-pointer border hover:border-indigo-500">
+        <!-- Card 4: Booking PC Non-KBM -->
+        <div onclick="openService('PC Non-KBM', 'PC', false)" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-5 cursor-pointer border hover:border-indigo-500">
           <div class="w-12 h-12 rounded-2xl bg-violet-600 text-white flex items-center justify-center text-xl">🕹️</div>
           <div>
             <h3 class="font-extrabold text-violet-400 text-base">Booking PC Non-KBM</h3>
@@ -222,6 +226,10 @@
     let devicesState = {};
     let audioCtx = null;
 
+    function isFridayToday() {
+      return new Date().getDay() === 5;
+    }
+
     function updateDateAndWeek() {
       const now = new Date();
       const dateStr = now.toLocaleDateString('id-ID', {
@@ -231,13 +239,37 @@
         year: 'numeric'
       });
 
-      // Hitung otomatis pekan ke-berapa dalam bulan berjalan (1 - 5)
       const weekOfMonth = Math.ceil(now.getDate() / 7);
 
       const dateEl = document.getElementById('live-date-display');
       const weekEl = document.getElementById('live-week-display');
       if (dateEl) dateEl.innerText = `📅 ${dateStr}`;
       if (weekEl) weekEl.innerText = `🗓️ Pekan ke-${weekOfMonth}`;
+
+      // Jika hari Jumat, nonaktifkan 2 menu KBM dan tampilkan pesan
+      if (isFridayToday()) {
+        const kbmCards = [
+          { card: 'card-gadget-kbm', desc: 'desc-gadget-kbm', action: 'action-gadget-kbm' },
+          { card: 'card-pc-kbm', desc: 'desc-pc-kbm', action: 'action-pc-kbm' }
+        ];
+
+        kbmCards.forEach(item => {
+          const cardEl = document.getElementById(item.card);
+          const descEl = document.getElementById(item.desc);
+          const actionEl = document.getElementById(item.action);
+          if (cardEl) {
+            cardEl.classList.remove('card-3d', 'cursor-pointer', 'hover:border-indigo-500');
+            cardEl.classList.add('opacity-55', 'cursor-not-allowed', 'border-rose-500/30', 'bg-slate-900/40');
+          }
+          if (descEl) {
+            descEl.innerText = 'Layanan KBM ditutup khusus hari Jumat.';
+          }
+          if (actionEl) {
+            actionEl.className = 'text-xs font-extrabold text-rose-400';
+            actionEl.innerText = '🚫 Ups, there are no KBM today!';
+          }
+        });
+      }
     }
 
     function getSchedules() {
@@ -303,7 +335,11 @@
       checkCurrentDeviceLock();
     }
 
-    function openService(serviceName, category) {
+    function openService(serviceName, category, isKbm) {
+      if (isKbm && isFridayToday()) {
+        alert('Ups, there are no KBM today!');
+        return;
+      }
       currentCategory = category;
       document.getElementById('service-title').innerText = `Denah Perangkat - ${serviceName}`;
       initData();
