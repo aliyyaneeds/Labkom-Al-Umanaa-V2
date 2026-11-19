@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Labkom Al-Umanaa - Main System</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -27,7 +28,7 @@
         <div>
           <h1 class="font-extrabold text-lg leading-tight text-white">Labkom Al-Umanaa</h1>
           <p id="device-indicator" class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
-            <span class="w-2 h-2 rounded-full bg-indigo-400"></span> Mode Central Monitor
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Live Sync Aktif
           </p>
         </div>
       </div>
@@ -45,7 +46,7 @@
       <div class="w-20 h-20 bg-red-500/20 rounded-2xl flex items-center justify-center text-4xl mx-auto animate-bounce">🚨</div>
       <div>
         <h2 class="text-2xl font-black text-red-400">WAKTU PEMINJAMAN HABIS!</h2>
-        <p class="text-slate-300 text-xs mt-1">Perangkat <span id="lock-device-id" class="font-bold text-amber-400">LD-XX</span> telah melewati batas sesi KBM.</p>
+        <p class="text-slate-300 text-xs mt-1">Perangkat <span id="lock-device-id" class="font-bold text-amber-400">LD-XX</span> telah melewati batas sesi waktu.</p>
       </div>
       <div class="space-y-3 pt-2">
         <input type="password" id="unlock-pin" placeholder="Masukkan Master PIN Admin" class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-center font-bold tracking-widest text-lg text-white">
@@ -63,22 +64,16 @@
       <div class="text-center space-y-3">
         <h2 class="text-3xl font-black text-white">Labkom Main Menu</h2>
         
-        <!-- Keterangan Tanggal & Pekan Per Bulan -->
         <div class="inline-flex flex-wrap items-center justify-center gap-3 px-5 py-2.5 rounded-2xl bg-slate-900/90 border border-indigo-500/30 shadow-lg">
-          <span id="live-date-display" class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-            📅 Memuat tanggal...
-          </span>
+          <span id="live-date-display" class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">📅 Memuat...</span>
           <span class="text-slate-700">|</span>
-          <span id="live-week-display" class="px-3 py-1 rounded-full bg-indigo-600/30 border border-indigo-500/50 text-indigo-300 text-xs font-extrabold tracking-wide">
-            🗓️ Pekan ke-...
-          </span>
+          <span id="live-week-display" class="px-3 py-1 rounded-full bg-indigo-600/30 border border-indigo-500/50 text-indigo-300 text-xs font-extrabold tracking-wide">🗓️ Pekan ke-...</span>
         </div>
 
         <p class="text-xs text-slate-400">Silakan pilih kategori layanan peminjaman perangkat.</p>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <!-- Card 1: Booking Gadget KBM -->
         <div id="card-gadget-kbm" onclick="openService('Gadget KBM', 'GADGET', true)" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-5 cursor-pointer border hover:border-indigo-500">
           <div class="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-xl">📱</div>
           <div>
@@ -88,7 +83,6 @@
           <span id="action-gadget-kbm" class="text-xs font-bold text-blue-400">Buka Denah Gadget →</span>
         </div>
 
-        <!-- Card 2: Booking Non-KBM Gadgets -->
         <div onclick="openService('Gadget Non-KBM', 'GADGET', false)" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-5 cursor-pointer border hover:border-indigo-500">
           <div class="w-12 h-12 rounded-2xl bg-cyan-500 text-white flex items-center justify-center text-xl">💻</div>
           <div>
@@ -98,7 +92,6 @@
           <span class="text-xs font-bold text-cyan-400">Buka Denah Gadget →</span>
         </div>
 
-        <!-- Card 3: Booking PC KBM -->
         <div id="card-pc-kbm" onclick="openService('PC KBM', 'PC', true)" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-5 cursor-pointer border hover:border-indigo-500">
           <div class="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-xl">🖥️</div>
           <div>
@@ -108,7 +101,6 @@
           <span id="action-pc-kbm" class="text-xs font-bold text-emerald-400">Buka Denah PC →</span>
         </div>
 
-        <!-- Card 4: Booking PC Non-KBM -->
         <div onclick="openService('PC Non-KBM', 'PC', false)" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-5 cursor-pointer border hover:border-indigo-500">
           <div class="w-12 h-12 rounded-2xl bg-violet-600 text-white flex items-center justify-center text-xl">🕹️</div>
           <div>
@@ -139,8 +131,8 @@
       <!-- Banner Fitur Booking Semua Unit -->
       <div class="bg-gradient-to-r from-indigo-900/60 to-violet-900/60 border border-indigo-500/40 rounded-2xl p-4 flex flex-wrap justify-between items-center gap-4 shadow-lg">
         <div>
-          <h3 class="text-sm font-extrabold text-white flex items-center gap-2">⚡ Booking Massal Satu Kelas / Sesi KBM</h3>
-          <p class="text-xs text-indigo-200 mt-0.5">Pinjam seluruh unit yang tersedia sekaligus untuk sesi KBM-1, KBM-2, KBM-3, atau KBM-4.</p>
+          <h3 class="text-sm font-extrabold text-white flex items-center gap-2">⚡ Booking Massal Satu Kelas / Kegiatan</h3>
+          <p class="text-xs text-indigo-200 mt-0.5">Pinjam seluruh unit yang tersedia sekaligus sesuai sesi waktu yang dipilih.</p>
         </div>
         <button type="button" onclick="openMassBookingModal()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-extrabold shadow-md shadow-indigo-600/30 transition">
           ⚡ Booking Semua Unit Sekarang
@@ -178,7 +170,7 @@
           <input type="text" id="input-student-name" placeholder="Contoh: Ahmad Fadil" class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 text-xs">
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Pilih Sesi Jam KBM</label>
+          <label id="label-single-session" class="block text-xs font-semibold text-slate-300 mb-1">Pilih Sesi Waktu</label>
           <select id="select-jampel" class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 text-xs"></select>
         </div>
       </div>
@@ -199,15 +191,12 @@
       <div class="space-y-3">
         <div>
           <label class="block text-xs font-semibold text-slate-300 mb-1">Nama Kelas / Guru / Kegiatan</label>
-          <input type="text" id="input-mass-name" placeholder="Contoh: Kelas XI-IPA 1 / Pak Budi" class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 text-xs">
+          <input type="text" id="input-mass-name" placeholder="Contoh: Ekskul Coding / Pak Budi" class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 text-xs">
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Pilih Sesi Jam KBM</label>
+          <label id="label-mass-session" class="block text-xs font-semibold text-slate-300 mb-1">Pilih Sesi Waktu</label>
           <select id="select-mass-jampel" class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 text-xs"></select>
         </div>
-        <p class="text-[11px] text-slate-400 bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
-          ℹ️ Semua unit yang berstatus <strong>Tersedia (Ready)</strong> akan otomatis dibooking untuk sesi KBM yang dipilih. Unit yang rusak tetap terkunci.
-        </p>
       </div>
       <div class="flex gap-3 pt-2">
         <button type="button" onclick="closeMassModal()" class="w-1/2 py-2.5 bg-slate-800 rounded-xl text-slate-300 text-xs font-semibold">Batal</button>
@@ -219,11 +208,23 @@
   <footer class="py-4 text-center text-xs text-slate-500 border-t border-slate-900">© Labkom Al-Umanaa System.</footer>
 
   <script>
+    // URL SUDAH DIISI OTOMATIS. TINGGAL TEMPEL PUBLISHABLE KEY DI BAWAH INI:
+    const SUPABASE_URL = 'https://wuvdwtwfeomvuoojsxsz.supabase.co';
+   const SUPABASE_KEY = 'sb_publishable_Sh5pIKFsXEQbnTaTrPDh4A_96MlfVRa';
+    const sb = (SUPABASE_KEY && !SUPABASE_KEY.startsWith('TEMPEL')) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
     const MASTER_PIN = "1234";
     let currentDeviceId = null;
     let currentCategory = 'GADGET';
+    let currentModeIsKbm = true;
     let selectedSeatId = null;
     let devicesState = {};
+    let schedulesState = {
+      'KBM-1': { label: '07:00 - 08:20', minutes: 80 },
+      'KBM-2': { label: '08:50 - 10:00', minutes: 70 },
+      'KBM-3': { label: '10:00 - 11:20', minutes: 80 },
+      'KBM-4': { label: '12:40 - 14:00', minutes: 80 }
+    };
     let audioCtx = null;
 
     function isFridayToday() {
@@ -232,28 +233,17 @@
 
     function updateDateAndWeek() {
       const now = new Date();
-      const dateStr = now.toLocaleDateString('id-ID', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      });
-
+      const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
       const weekOfMonth = Math.ceil(now.getDate() / 7);
 
-      const dateEl = document.getElementById('live-date-display');
-      const weekEl = document.getElementById('live-week-display');
-      if (dateEl) dateEl.innerText = `📅 ${dateStr}`;
-      if (weekEl) weekEl.innerText = `🗓️ Pekan ke-${weekOfMonth}`;
+      document.getElementById('live-date-display').innerText = `📅 ${dateStr}`;
+      document.getElementById('live-week-display').innerText = `🗓️ Pekan ke-${weekOfMonth}`;
 
-      // Jika hari Jumat, nonaktifkan 2 menu KBM dan tampilkan pesan
       if (isFridayToday()) {
-        const kbmCards = [
+        [
           { card: 'card-gadget-kbm', desc: 'desc-gadget-kbm', action: 'action-gadget-kbm' },
           { card: 'card-pc-kbm', desc: 'desc-pc-kbm', action: 'action-pc-kbm' }
-        ];
-
-        kbmCards.forEach(item => {
+        ].forEach(item => {
           const cardEl = document.getElementById(item.card);
           const descEl = document.getElementById(item.desc);
           const actionEl = document.getElementById(item.action);
@@ -261,9 +251,7 @@
             cardEl.classList.remove('card-3d', 'cursor-pointer', 'hover:border-indigo-500');
             cardEl.classList.add('opacity-55', 'cursor-not-allowed', 'border-rose-500/30', 'bg-slate-900/40');
           }
-          if (descEl) {
-            descEl.innerText = 'Layanan KBM ditutup khusus hari Jumat.';
-          }
+          if (descEl) descEl.innerText = 'Layanan KBM ditutup khusus hari Jumat.';
           if (actionEl) {
             actionEl.className = 'text-xs font-extrabold text-rose-400';
             actionEl.innerText = '🚫 Ups, there are no KBM today!';
@@ -272,56 +260,50 @@
       }
     }
 
-    function getSchedules() {
-      let sched = null;
-      try { sched = JSON.parse(localStorage.getItem('labkom_schedules')); } catch(e) {}
-      if (!sched) {
-        sched = {
-          'KBM-1': { label: '07:00 - 08:20', minutes: 80 },
-          'KBM-2': { label: '08:50 - 10:00', minutes: 70 },
-          'KBM-3': { label: '10:00 - 11:20', minutes: 80 },
-          'KBM-4': { label: '12:40 - 14:00', minutes: 80 }
-        };
-        localStorage.setItem('labkom_schedules', JSON.stringify(sched));
-      }
-      return sched;
-    }
-
     function populateScheduleDropdowns() {
-      const sched = getSchedules();
-      const opts = Object.keys(sched).map(k => `<option value="${k}">${k} (${sched[k].label})</option>`).join('');
+      const keys = Object.keys(schedulesState);
+      const opts = keys.map((k, idx) => {
+        const s = schedulesState[k];
+        const sessionTag = currentModeIsKbm ? k : `Sesi Non-KBM ${idx + 1}`;
+        return `<option value="${sessionTag}" data-min="${s.minutes}">${sessionTag} (${s.label})</option>`;
+      }).join('');
+
       document.getElementById('select-jampel').innerHTML = opts;
       document.getElementById('select-mass-jampel').innerHTML = opts;
+      document.getElementById('label-single-session').innerText = currentModeIsKbm ? 'Pilih Sesi Jam KBM' : 'Pilih Sesi Waktu Non-KBM';
+      document.getElementById('label-mass-session').innerText = currentModeIsKbm ? 'Pilih Sesi Jam KBM' : 'Pilih Sesi Waktu Non-KBM';
     }
 
-    function initData() {
-      updateDateAndWeek();
-
-      const key = `labkom_devices_${currentCategory}`;
-      let saved = null;
-      try { saved = JSON.parse(localStorage.getItem(key)); } catch(e) {}
-      if (!saved || typeof saved !== 'object' || Object.keys(saved).length === 0) {
-        saved = {};
-        if (currentCategory === 'GADGET') {
-          for (let i = 1; i <= 6; i++) saved[`LD-${String(i).padStart(2, '0')}`] = { id: `LD-${String(i).padStart(2, '0')}`, status: 'free', user: '', jampel: '', endTime: null };
-          for (let i = 1; i <= 6; i++) saved[`CB-${String(i).padStart(2, '0')}`] = { id: `CB-${String(i).padStart(2, '0')}`, status: 'free', user: '', jampel: '', endTime: null };
-        } else {
-          for (let i = 1; i <= 26; i++) saved[`PC-${String(i).padStart(2, '0')}`] = { id: `PC-${String(i).padStart(2, '0')}`, status: 'free', user: '', jampel: '', endTime: null };
-        }
-        localStorage.setItem(key, JSON.stringify(saved));
+    function getDefaultDevices(cat) {
+      const def = {};
+      if (cat === 'GADGET') {
+        for (let i = 1; i <= 6; i++) def[`LD-${String(i).padStart(2, '0')}`] = { id: `LD-${String(i).padStart(2, '0')}`, status: 'free', user: '', jampel: '', endTime: null };
+        for (let i = 1; i <= 6; i++) def[`CB-${String(i).padStart(2, '0')}`] = { id: `CB-${String(i).padStart(2, '0')}`, status: 'free', user: '', jampel: '', endTime: null };
+      } else {
+        for (let i = 1; i <= 26; i++) def[`PC-${String(i).padStart(2, '0')}`] = { id: `PC-${String(i).padStart(2, '0')}`, status: 'free', user: '', jampel: '', endTime: null };
       }
-      devicesState = saved;
+      return def;
+    }
 
-      const urlParams = new URLSearchParams(window.location.search);
-      currentDeviceId = urlParams.get('device');
-      if (currentDeviceId) {
-        document.getElementById('device-indicator').innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Mode Perangkat: <strong class="text-emerald-400">${currentDeviceId}</strong>`;
-        const targetCat = currentDeviceId.startsWith('PC') ? 'PC' : 'GADGET';
-        if (currentCategory !== targetCat) {
-          currentCategory = targetCat;
-          return initData();
+    async function syncFromCloud() {
+      const key = `labkom_devices_${currentCategory}`;
+      if (sb) {
+        const { data: devRow } = await sb.from('labkom_store').select('payload').eq('id', key).maybeSingle();
+        if (devRow && devRow.payload) {
+          devicesState = devRow.payload;
+          localStorage.setItem(key, JSON.stringify(devicesState));
+        } else {
+          devicesState = getDefaultDevices(currentCategory);
+          await sb.from('labkom_store').upsert({ id: key, payload: devicesState });
         }
-        switchView('grid');
+
+        const { data: schedRow } = await sb.from('labkom_store').select('payload').eq('id', 'labkom_schedules').maybeSingle();
+        if (schedRow && schedRow.payload) {
+          schedulesState = schedRow.payload;
+        }
+      } else {
+        devicesState = JSON.parse(localStorage.getItem(key) || 'null') || getDefaultDevices(currentCategory);
+        schedulesState = JSON.parse(localStorage.getItem('labkom_schedules') || 'null') || schedulesState;
       }
 
       populateScheduleDropdowns();
@@ -329,10 +311,27 @@
       checkCurrentDeviceLock();
     }
 
-    function saveData() {
-      localStorage.setItem(`labkom_devices_${currentCategory}`, JSON.stringify(devicesState));
+    async function saveData() {
+      const key = `labkom_devices_${currentCategory}`;
+      localStorage.setItem(key, JSON.stringify(devicesState));
       renderSeats();
       checkCurrentDeviceLock();
+      if (sb) {
+        await sb.from('labkom_store').upsert({ id: key, payload: devicesState, updated_at: new Date().toISOString() });
+      }
+    }
+
+    async function initData() {
+      updateDateAndWeek();
+      const urlParams = new URLSearchParams(window.location.search);
+      currentDeviceId = urlParams.get('device');
+      if (currentDeviceId) {
+        document.getElementById('device-indicator').innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Perangkat: <strong class="text-emerald-400">${currentDeviceId}</strong>`;
+        currentCategory = currentDeviceId.startsWith('PC') ? 'PC' : 'GADGET';
+        currentModeIsKbm = !isFridayToday();
+        switchView('grid');
+      }
+      await syncFromCloud();
     }
 
     function openService(serviceName, category, isKbm) {
@@ -341,8 +340,9 @@
         return;
       }
       currentCategory = category;
+      currentModeIsKbm = isKbm;
       document.getElementById('service-title').innerText = `Denah Perangkat - ${serviceName}`;
-      initData();
+      syncFromCloud();
       switchView('grid');
     }
 
@@ -395,15 +395,15 @@
 
     function closeModal() { document.getElementById('booking-modal').classList.add('hidden'); }
 
-    function confirmBooking() {
+    async function confirmBooking() {
       const name = document.getElementById('input-student-name').value.trim();
-      const jampelKey = document.getElementById('select-jampel').value;
+      const sel = document.getElementById('select-jampel');
+      const sessionLabel = sel.value;
+      const mins = parseInt(sel.options[sel.selectedIndex].getAttribute('data-min')) || 80;
       if (!name) return alert('Harap isi nama peminjam!');
 
-      const sched = getSchedules();
-      const durationMinutes = sched[jampelKey] ? sched[jampelKey].minutes : 80;
-      devicesState[selectedSeatId] = { ...devicesState[selectedSeatId], status: 'occupied', user: name, jampel: jampelKey, endTime: Date.now() + durationMinutes * 60 * 1000 };
-      saveData();
+      devicesState[selectedSeatId] = { ...devicesState[selectedSeatId], status: 'occupied', user: name, jampel: sessionLabel, endTime: Date.now() + mins * 60 * 1000 };
+      await saveData();
       closeModal();
     }
 
@@ -416,29 +416,25 @@
 
     function closeMassModal() { document.getElementById('mass-booking-modal').classList.add('hidden'); }
 
-    function confirmMassBooking() {
+    async function confirmMassBooking() {
       const name = document.getElementById('input-mass-name').value.trim();
-      const jampelKey = document.getElementById('select-mass-jampel').value;
+      const sel = document.getElementById('select-mass-jampel');
+      const sessionLabel = sel.value;
+      const mins = parseInt(sel.options[sel.selectedIndex].getAttribute('data-min')) || 80;
       if (!name) return alert('Harap isi nama kelas/kegiatan!');
 
-      const sched = getSchedules();
-      const durationMinutes = sched[jampelKey] ? sched[jampelKey].minutes : 80;
-      const endTime = Date.now() + durationMinutes * 60 * 1000;
-
+      const endTime = Date.now() + mins * 60 * 1000;
       let count = 0;
       Object.keys(devicesState).forEach(id => {
         if (devicesState[id].status === 'free') {
-          devicesState[id] = { ...devicesState[id], status: 'occupied', user: name, jampel: jampelKey, endTime };
+          devicesState[id] = { ...devicesState[id], status: 'occupied', user: name, jampel: sessionLabel, endTime };
           count++;
         }
       });
 
-      if (count === 0) {
-        alert('Tidak ada unit yang tersedia untuk dibooking (semua sedang dipakai atau rusak).');
-      } else {
-        saveData();
-        closeMassModal();
-      }
+      if (count === 0) return alert('Semua unit sedang dipakai atau rusak.');
+      await saveData();
+      closeMassModal();
     }
 
     function playBeep() {
@@ -455,9 +451,7 @@
 
     function checkCurrentDeviceLock() {
       if (!currentDeviceId) return;
-      const cat = currentDeviceId.startsWith('PC') ? 'PC' : 'GADGET';
-      const latest = JSON.parse(localStorage.getItem(`labkom_devices_${cat}`) || '{}');
-      const dev = latest[currentDeviceId];
+      const dev = devicesState[currentDeviceId];
       if (!dev) return;
 
       const lockOverlay = document.getElementById('lock-screen');
@@ -473,19 +467,21 @@
       }
     }
 
-    function attemptUnlock() {
+    async function attemptUnlock() {
       if (document.getElementById('unlock-pin').value === MASTER_PIN) {
         document.getElementById('lock-error').classList.add('hidden');
         document.getElementById('unlock-pin').value = '';
         devicesState[currentDeviceId] = { ...devicesState[currentDeviceId], status: 'free', user: '', jampel: '', endTime: null };
-        saveData();
+        await saveData();
       } else {
         document.getElementById('lock-error').classList.remove('hidden');
       }
     }
 
-    window.addEventListener('storage', initData);
-    setInterval(checkCurrentDeviceLock, 2000);
+    setInterval(() => {
+      syncFromCloud();
+    }, 4000);
+
     initData();
   </script>
 </body>
