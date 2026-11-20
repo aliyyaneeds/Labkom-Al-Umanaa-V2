@@ -70,7 +70,7 @@
           <span id="live-week-display" class="px-3 py-1 rounded-full bg-indigo-600/30 border border-indigo-500/50 text-indigo-300 text-xs font-extrabold tracking-wide">🗓️ Pekan ke-...</span>
         </div>
 
-        <p class="text-xs text-slate-400">Jam operasional: <strong>KBM (07.00 – 14.00)</strong> • <strong>Non-KBM (14.00 – 15.00 & 16.00 – 17.00, jeda sholat 15.00–16.00)</strong>.</p>
+        <p class="text-xs text-slate-400">Jam operasional: <strong>KBM (07.00 – 14.00, tutup tiap Jumat)</strong> • <strong>Non-KBM (s.d. 17.00, jeda sholat 15.00–16.00)</strong>.</p>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -247,13 +247,13 @@
     const MASTER_PIN = "1234";
     let currentDeviceId = null;
     let currentCategory = 'GADGET';
-    let currentModeIsKbm = true;
+    let currentModeIsKbm = !isFridayToday();
     let selectedSlotKey = 'KBM-1';
     let selectedSeatId = null;
     let isSaving = false;
     let devicesState = {};
 
-    // Jadwal KBM (Senin-Kamis maks 14.00) & Non-KBM (jeda sholat 15.00 - 16.00 ditiadakan)
+    // Jadwal KBM (Senin-Kamis maks 14.00) & Non-KBM (semua hari s.d. 17.00, jeda sholat 15.00 - 16.00 ditiadakan)
     const DEFAULT_KBM_SCHEDULES = {
       'KBM-1': { label: '07:00 - 08:20', minutes: 80 },
       'KBM-2': { label: '08:50 - 10:00', minutes: 70 },
@@ -269,7 +269,7 @@
     const DEFAULT_NONKBM_FRIDAY = {
       'Non-KBM 1': { label: '07:30 - 09:30', minutes: 120 },
       'Non-KBM 2': { label: '09:30 - 11:30', minutes: 120 },
-      'Non-KBM 3': { label: '13:30 - 15:00', minutes: 90 },
+      'Non-KBM 3': { label: '14:00 - 15:00', minutes: 60 },
       'Non-KBM 4': { label: '16:00 - 17:00', minutes: 60 }
     };
 
@@ -297,12 +297,21 @@
       return new Date().getDay() === 5;
     }
 
+    function enforceFridayRule() {
+      if (isFridayToday() && currentModeIsKbm) {
+        currentModeIsKbm = false;
+        selectedSlotKey = Object.keys(nonKbmFridaySchedules)[0] || 'Non-KBM 1';
+      }
+    }
+
     function getActiveSchedulesMap() {
+      enforceFridayRule();
       if (currentModeIsKbm) return kbmSchedules;
       return isFridayToday() ? nonKbmFridaySchedules : nonKbmWeekdaySchedules;
     }
 
     function getFullSlotId(slotName) {
+      enforceFridayRule();
       const dayType = isFridayToday() ? 'FRI' : 'REG';
       return `${currentModeIsKbm ? 'KBM' : `NONKBM_${dayType}`}_${slotName}`;
     }
@@ -369,12 +378,12 @@
       const descPcNon = document.getElementById('desc-pc-nonkbm');
       if (descGadgetNon) {
         descGadgetNon.innerText = friday
-          ? 'Jadwal khusus Jumat (07.30–11.30, 13.30–15.00, 16.00–17.00).'
+          ? 'Jadwal khusus Jumat (07.30–11.30, 14.00–15.00 & 16.00–17.00).'
           : 'Sesi 14.00–15.00 & 16.00–17.00 (Jeda Sholat 15.00–16.00).';
       }
       if (descPcNon) {
         descPcNon.innerText = friday
-          ? 'Jadwal khusus Jumat (07.30–11.30, 13.30–15.00, 16.00–17.00).'
+          ? 'Jadwal khusus Jumat (07.30–11.30, 14.00–15.00 & 16.00–17.00).'
           : 'Sesi 14.00–15.00 & 16.00–17.00 (Jeda Sholat 15.00–16.00).';
       }
     }
@@ -462,6 +471,7 @@
 
     async function syncFromCloud() {
       if (isSaving) return;
+      enforceFridayRule();
       const key = `labkom_devices_${currentCategory}`;
       const { data: devRow, error } = await sb.from('labkom_store').select('payload').eq('id', key).maybeSingle();
       if (!error && devRow && devRow.payload) {
@@ -482,9 +492,12 @@
       const { data: schedRow } = await sb.from('labkom_store').select('payload').eq('id', 'labkom_schedules').maybeSingle();
       if (schedRow && schedRow.payload) {
         if (schedRow.payload.kbm) kbmSchedules = schedRow.payload.kbm;
-        else kbmSchedules = schedRow.payload;
-        if (schedRow.payload.nonKbmWeekday) nonKbmWeekdaySchedules = schedRow.payload.nonKbmWeekday;
-        if (schedRow.payload.nonKbmFriday) nonKbmFridaySchedules = schedRow.payload.nonKbmFriday;
+        if (schedRow.payload.nonKbmWeekday && Object.values(schedRow.payload.nonKbmWeekday).some(s => s.label.includes('14:00'))) {
+          nonKbmWeekdaySchedules = schedRow.payload.nonKbmWeekday;
+        }
+        if (schedRow.payload.nonKbmFriday && Object.values(schedRow.payload.nonKbmFriday).some(s => s.label.includes('14:00'))) {
+          nonKbmFridaySchedules = schedRow.payload.nonKbmFriday;
+        }
       }
 
       renderSessionTabs();
@@ -506,12 +519,14 @@
 
     async function initData() {
       updateDateAndWeek();
+      enforceFridayRule();
       const urlParams = new URLSearchParams(window.location.search);
       currentDeviceId = urlParams.get('device');
       if (currentDeviceId) {
         document.getElementById('device-indicator').innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Perangkat: <strong class="text-emerald-400">${currentDeviceId}</strong>`;
         currentCategory = currentDeviceId.startsWith('PC') ? 'PC' : 'GADGET';
         currentModeIsKbm = !isFridayToday();
+        document.getElementById('service-title').innerText = `Denah Perangkat - ${currentCategory} ${currentModeIsKbm ? 'KBM' : 'Non-KBM'}`;
         switchView('grid');
       }
       await syncFromCloud();
@@ -524,8 +539,9 @@
       }
       currentCategory = category;
       currentModeIsKbm = isKbm;
+      enforceFridayRule();
       const activeMap = getActiveSchedulesMap();
-      selectedSlotKey = Object.keys(activeMap)[0] || 'KBM-1';
+      selectedSlotKey = Object.keys(activeMap)[0] || 'Non-KBM 1';
       document.getElementById('service-title').innerText = `Denah Perangkat - ${serviceName}`;
       syncFromCloud();
       switchView('grid');
@@ -657,6 +673,15 @@
     }
 
     function switchView(view) {
+      if (view !== 'menu') {
+        enforceFridayRule();
+        if (isFridayToday() && document.getElementById('service-title').innerText.includes('KBM') && !document.getElementById('service-title').innerText.includes('Non-KBM')) {
+          document.getElementById('service-title').innerText = `Denah Perangkat - ${currentCategory} Non-KBM`;
+        }
+        renderSessionTabs();
+        populateScheduleDropdowns();
+        renderSeats();
+      }
       document.getElementById('view-menu').classList.toggle('hidden', view !== 'menu');
       document.getElementById('view-grid').classList.toggle('hidden', view === 'menu');
       document.getElementById('btn-nav-menu').className = view === 'menu' ? 'px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 text-white' : 'px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white';
