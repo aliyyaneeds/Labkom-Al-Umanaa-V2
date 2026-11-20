@@ -78,9 +78,9 @@
           <div class="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-xl">📱</div>
           <div>
             <h3 class="font-extrabold text-blue-400 text-base">Booking Gadget KBM</h3>
-            <p id="desc-gadget-kbm" class="text-xs text-slate-400 mt-1">Laptop DELL & Chromebook saat jam KBM.</p>
+            <p class="text-xs text-slate-400 mt-1">Laptop DELL & Chromebook saat jam KBM.</p>
           </div>
-          <span id="action-gadget-kbm" class="text-xs font-bold text-blue-400">Buka Denah Gadget →</span>
+          <span class="text-xs font-bold text-blue-400">Buka Denah Gadget →</span>
         </div>
 
         <div onclick="openService('Gadget Non-KBM', 'GADGET', false)" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-5 cursor-pointer border hover:border-indigo-500">
@@ -96,9 +96,9 @@
           <div class="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-xl">🖥️</div>
           <div>
             <h3 class="font-extrabold text-emerald-400 text-base">Booking PC KBM</h3>
-            <p id="desc-pc-kbm" class="text-xs text-slate-400 mt-1">Komputer PC Desktop saat jam KBM.</p>
+            <p class="text-xs text-slate-400 mt-1">Komputer PC Desktop saat jam KBM.</p>
           </div>
-          <span id="action-pc-kbm" class="text-xs font-bold text-emerald-400">Buka Denah PC →</span>
+          <span class="text-xs font-bold text-emerald-400">Buka Denah PC →</span>
         </div>
 
         <div onclick="openService('PC Non-KBM', 'PC', false)" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-5 cursor-pointer border hover:border-indigo-500">
@@ -228,7 +228,7 @@
     let currentDeviceId = null;
     let currentCategory = 'GADGET';
     let currentModeIsKbm = true;
-    let selectedSlotKey = 'KBM-1'; // Slot sesi yang sedang dipilih user
+    let selectedSlotKey = 'KBM-1';
     let selectedSeatId = null;
     let isSaving = false;
     let devicesState = {};
@@ -245,11 +245,6 @@
       return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     }
 
-    function isFridayToday() {
-      return new Date().getDay() === 5;
-    }
-
-    // Slot key unik per mode (misal: "KBM_KBM-1" atau "NONKBM_KBM-1")
     function getFullSlotId(baseKey) {
       return `${currentModeIsKbm ? 'KBM' : 'NONKBM'}_${baseKey}`;
     }
@@ -258,7 +253,7 @@
       return currentModeIsKbm ? baseKey : `Non-KBM ${idx + 1}`;
     }
 
-    // Bersihkan booking yang sudah ganti tanggal (hari kemarin otomatis reset hari ini)
+    // Bersihkan booking hari sebelumnya saat ganti hari (berlaku untuk semua hari & semua pekan)
     function cleanOldDayBookings(stateObj) {
       let changed = false;
       const today = getTodayDateString();
@@ -287,26 +282,6 @@
 
       document.getElementById('live-date-display').innerText = `📅 ${dateStr}`;
       document.getElementById('live-week-display').innerText = `🗓️ Pekan ke-${weekOfMonth}`;
-
-      if (isFridayToday()) {
-        [
-          { card: 'card-gadget-kbm', desc: 'desc-gadget-kbm', action: 'action-gadget-kbm' },
-          { card: 'card-pc-kbm', desc: 'desc-pc-kbm', action: 'action-pc-kbm' }
-        ].forEach(item => {
-          const cardEl = document.getElementById(item.card);
-          const descEl = document.getElementById(item.desc);
-          const actionEl = document.getElementById(item.action);
-          if (cardEl) {
-            cardEl.classList.remove('card-3d', 'cursor-pointer', 'hover:border-indigo-500');
-            cardEl.classList.add('opacity-55', 'cursor-not-allowed', 'border-rose-500/30', 'bg-slate-900/40');
-          }
-          if (descEl) descEl.innerText = 'Layanan KBM ditutup khusus hari Jumat.';
-          if (actionEl) {
-            actionEl.className = 'text-xs font-extrabold text-rose-400';
-            actionEl.innerText = '🚫 Ups, there are no KBM today!';
-          }
-        });
-      }
     }
 
     function selectSessionSlot(baseKey) {
@@ -432,17 +407,13 @@
       if (currentDeviceId) {
         document.getElementById('device-indicator').innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Perangkat: <strong class="text-emerald-400">${currentDeviceId}</strong>`;
         currentCategory = currentDeviceId.startsWith('PC') ? 'PC' : 'GADGET';
-        currentModeIsKbm = !isFridayToday();
+        currentModeIsKbm = true;
         switchView('grid');
       }
       await syncFromCloud();
     }
 
     function openService(serviceName, category, isKbm) {
-      if (isKbm && isFridayToday()) {
-        alert('Ups, there are no KBM today!');
-        return;
-      }
       currentCategory = category;
       currentModeIsKbm = isKbm;
       document.getElementById('service-title').innerText = `Denah Perangkat - ${serviceName}`;
@@ -592,7 +563,6 @@
       } catch(e) {}
     }
 
-    // Lock screen hanya muncul jika dikunci khusus oleh Alarm Admin
     function checkCurrentDeviceLock() {
       if (!currentDeviceId) return;
       const dev = devicesState[currentDeviceId];
@@ -623,6 +593,7 @@
     }
 
     setInterval(() => {
+      updateDateAndWeek();
       syncFromCloud();
     }, 4000);
 
