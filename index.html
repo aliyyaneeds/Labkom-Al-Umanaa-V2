@@ -28,7 +28,7 @@
         <div>
           <h1 class="font-extrabold text-lg leading-tight text-white">Labkom Al-Umanaa</h1>
           <p id="device-indicator" class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Booking Terpisah Per Sesi Aktif (07.00 - 17.00)
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> PC & Gadget Terpisah Per Sesi (07.00 - 17.00)
           </p>
         </div>
       </div>
@@ -70,7 +70,7 @@
           <span id="live-week-display" class="px-3 py-1 rounded-full bg-indigo-600/30 border border-indigo-500/50 text-indigo-300 text-xs font-extrabold tracking-wide">🗓️ Pekan ke-...</span>
         </div>
 
-        <p class="text-xs text-slate-400">Jam operasional: <strong>KBM (07.00 – 14.00, tutup tiap Jumat)</strong> • <strong>Non-KBM (s.d. 17.00, jeda sholat 15.00–16.00)</strong>.</p>
+        <p class="text-xs text-slate-400">Jam operasional: <strong>KBM (07.00 – 14.00, tutup tiap Jumat)</strong> • <strong>Non-KBM Gadget & PC (s.d. 17.00, jeda sholat 15.00–16.00)</strong>.</p>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -124,8 +124,13 @@
 
     <!-- View 2: Denah Perangkat -->
     <div id="view-grid" class="hidden space-y-6">
-      <div class="glass-card rounded-2xl p-3.5 text-center">
+      <div class="glass-card rounded-2xl p-3.5 flex flex-wrap justify-between items-center gap-3">
         <p class="text-[11px] font-bold uppercase tracking-widest text-indigo-400">Papan Layar Utama / Meja Pengawas Labkom</p>
+        <!-- Tombol Switch Cepat PC vs Gadget -->
+        <div class="flex items-center gap-2 bg-slate-950/90 p-1 rounded-xl border border-slate-800">
+          <button type="button" id="quick-switch-gadget" onclick="switchCategoryDirect('GADGET')" class="px-3.5 py-1.5 rounded-lg text-xs font-extrabold bg-indigo-600 text-white transition">📱 Denah Gadget (LD & CB)</button>
+          <button type="button" id="quick-switch-pc" onclick="switchCategoryDirect('PC')" class="px-3.5 py-1.5 rounded-lg text-xs font-extrabold text-slate-400 hover:text-white transition">🖥️ Denah PC (PC-01 s.d. 26)</button>
+        </div>
       </div>
 
       <!-- Pemilih Sesi Waktu -->
@@ -133,7 +138,7 @@
         <div class="flex flex-wrap justify-between items-center gap-2">
           <div>
             <h3 class="text-xs font-extrabold uppercase tracking-wider text-indigo-300">🕒 Pilih Jam / Sesi Booking (Maks. 17.00 WIB • Jeda Sholat 15.00–16.00):</h3>
-            <p class="text-[11px] text-slate-400">Booking di satu sesi tidak mengganggu sesi lainnya. Klik tombol jadwal di kanan untuk cek rincian semua sesi.</p>
+            <p class="text-[11px] text-slate-400">Booking PC & Gadget terpisah per unit dan per sesi. Klik tombol jadwal di kanan untuk cek rincian semua sesi.</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button type="button" onclick="openAllScheduleModal()" class="px-3.5 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold transition">
@@ -316,6 +321,28 @@
       return `${currentModeIsKbm ? 'KBM' : `NONKBM_${dayType}`}_${slotName}`;
     }
 
+    function updateQuickCategoryButtons() {
+      const btnGadget = document.getElementById('quick-switch-gadget');
+      const btnPc = document.getElementById('quick-switch-pc');
+      if (!btnGadget || !btnPc) return;
+      btnGadget.className = currentCategory === 'GADGET'
+        ? 'px-3.5 py-1.5 rounded-lg text-xs font-extrabold bg-indigo-600 text-white transition'
+        : 'px-3.5 py-1.5 rounded-lg text-xs font-extrabold text-slate-400 hover:text-white transition';
+      btnPc.className = currentCategory === 'PC'
+        ? 'px-3.5 py-1.5 rounded-lg text-xs font-extrabold bg-emerald-600 text-white transition'
+        : 'px-3.5 py-1.5 rounded-lg text-xs font-extrabold text-slate-400 hover:text-white transition';
+    }
+
+    function switchCategoryDirect(cat) {
+      currentCategory = cat;
+      enforceFridayRule();
+      const modeLabel = currentModeIsKbm ? 'KBM' : 'Non-KBM';
+      const catLabel = cat === 'PC' ? 'PC' : 'Gadget';
+      document.getElementById('service-title').innerText = `Denah Perangkat - ${catLabel} ${modeLabel}`;
+      updateQuickCategoryButtons();
+      syncFromCloud();
+    }
+
     function cleanExpiredBookings(stateObj) {
       let changed = false;
       const today = getTodayDateString();
@@ -436,7 +463,8 @@
       }
       const massDesc = document.getElementById('mass-banner-desc');
       if (massDesc && activeSched) {
-        massDesc.innerText = `Pinjam seluruh unit kosong khusus untuk ${selectedSlotKey} (${activeSched.label}).`;
+        const unitLabel = currentCategory === 'PC' ? 'unit PC' : 'unit Gadget';
+        massDesc.innerText = `Pinjam seluruh ${unitLabel} kosong khusus untuk ${selectedSlotKey} (${activeSched.label}).`;
       }
     }
 
@@ -472,6 +500,7 @@
     async function syncFromCloud() {
       if (isSaving) return;
       enforceFridayRule();
+      updateQuickCategoryButtons();
       const key = `labkom_devices_${currentCategory}`;
       const { data: devRow, error } = await sb.from('labkom_store').select('payload').eq('id', key).maybeSingle();
       if (!error && devRow && devRow.payload) {
@@ -520,6 +549,7 @@
     async function initData() {
       updateDateAndWeek();
       enforceFridayRule();
+      updateQuickCategoryButtons();
       const urlParams = new URLSearchParams(window.location.search);
       currentDeviceId = urlParams.get('device');
       if (currentDeviceId) {
@@ -527,6 +557,7 @@
         currentCategory = currentDeviceId.startsWith('PC') ? 'PC' : 'GADGET';
         currentModeIsKbm = !isFridayToday();
         document.getElementById('service-title').innerText = `Denah Perangkat - ${currentCategory} ${currentModeIsKbm ? 'KBM' : 'Non-KBM'}`;
+        updateQuickCategoryButtons();
         switchView('grid');
       }
       await syncFromCloud();
@@ -540,6 +571,7 @@
       currentCategory = category;
       currentModeIsKbm = isKbm;
       enforceFridayRule();
+      updateQuickCategoryButtons();
       const activeMap = getActiveSchedulesMap();
       selectedSlotKey = Object.keys(activeMap)[0] || 'Non-KBM 1';
       document.getElementById('service-title').innerText = `Denah Perangkat - ${serviceName}`;
@@ -663,7 +695,7 @@
       document.getElementById('detail-modal-title').innerText = `📅 Rekap Booking ${currentCategory} Hari Ini`;
       document.getElementById('detail-modal-subtitle').innerText = totalBooked > 0
         ? `Total ${totalBooked} slot sesi terbooking hari ini:`
-        : `Belum ada unit yang dibooking hari ini.`;
+        : `Belum ada unit ${currentCategory} yang dibooking hari ini.`;
       document.getElementById('detail-modal-body').innerHTML = rowsHtml || `<div class="p-6 rounded-2xl bg-slate-900/70 border border-slate-800 text-center text-slate-400">Belum ada booking hari ini pada kategori ${currentCategory}.</div>`;
       document.getElementById('schedule-detail-modal').classList.remove('hidden');
     }
@@ -675,9 +707,10 @@
     function switchView(view) {
       if (view !== 'menu') {
         enforceFridayRule();
-        if (isFridayToday() && document.getElementById('service-title').innerText.includes('KBM') && !document.getElementById('service-title').innerText.includes('Non-KBM')) {
-          document.getElementById('service-title').innerText = `Denah Perangkat - ${currentCategory} Non-KBM`;
-        }
+        updateQuickCategoryButtons();
+        const modeLabel = currentModeIsKbm ? 'KBM' : 'Non-KBM';
+        const catLabel = currentCategory === 'PC' ? 'PC' : 'Gadget';
+        document.getElementById('service-title').innerText = `Denah Perangkat - ${catLabel} ${modeLabel}`;
         renderSessionTabs();
         populateScheduleDropdowns();
         renderSeats();
