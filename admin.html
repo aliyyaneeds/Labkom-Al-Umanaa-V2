@@ -14,19 +14,19 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen antialiased flex flex-col justify-between">
 
-  <!-- Login Overlay -->
+  <!-- Login Overlay (Selalu muncul setiap kali membuka Admin Panel) -->
   <div id="admin-login-overlay" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4">
-    <div class="glass-card rounded-3xl p-8 max-w-sm w-full text-center space-y-5 border border-slate-800 shadow-2xl">
+    <div class="glass-card rounded-3xl p-8 max-w-sm w-full text-center space-y-5 border border-rose-500/30 shadow-2xl">
       <div class="w-16 h-16 bg-rose-500/20 text-rose-400 rounded-2xl flex items-center justify-center text-3xl mx-auto">🔐</div>
       <div>
-        <h2 class="text-xl font-black text-white">Login Admin Labkom</h2>
-        <p class="text-xs text-slate-400 mt-1">Masukkan Master PIN untuk mengakses kontrol sistem.</p>
+        <h2 class="text-xl font-black text-white">Akses Terkunci - Admin Labkom</h2>
+        <p class="text-xs text-slate-400 mt-1">Masukkan Password / Master PIN untuk membuka Panel Admin.</p>
       </div>
-      <div class="space-y-3">
-        <input type="password" id="admin-pin-input" placeholder="••••" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-center font-bold tracking-widest text-lg text-white">
-        <button type="button" onclick="checkAdminLogin()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs">MASUK KE DASHBOARD</button>
-      </div>
-      <p id="admin-login-error" class="text-xs text-rose-400 font-semibold hidden">⚠️ PIN Salah! (Default: 1234)</p>
+      <form onsubmit="event.preventDefault(); checkAdminLogin();" class="space-y-3">
+        <input type="password" id="admin-pin-input" autocomplete="off" placeholder="Masukkan PIN Admin" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-center font-bold tracking-widest text-lg text-white focus:border-indigo-500 outline-none">
+        <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-indigo-600/25">🔓 BUKA ADMIN PANEL</button>
+      </form>
+      <p id="admin-login-error" class="text-xs text-rose-400 font-semibold hidden">⚠️ Password / PIN Salah! Akses ditolak.</p>
       <a href="index.html" class="block text-xs text-slate-400 hover:text-white pt-2">← Kembali ke Halaman Utama</a>
     </div>
   </div>
@@ -38,18 +38,18 @@
         <div class="w-10 h-10 bg-rose-600 rounded-xl flex items-center justify-center font-black text-lg">⚙️</div>
         <div>
           <h1 class="font-extrabold text-base text-white">Admin Control Center</h1>
-          <p class="text-[11px] text-emerald-400">● Cloud Sync & Jadwal 07.00 - 17.00 Aktif</p>
+          <p class="text-[11px] text-emerald-400">● Cloud Sync & Reset Mingguan Aktif</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
         <a href="index.html" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold">🏠 Lihat Denah</a>
-        <button type="button" onclick="logoutAdmin()" class="px-4 py-2 bg-rose-600/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-bold">Keluar</button>
+        <button type="button" onclick="logoutAdmin()" class="px-4 py-2 bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-bold">🔒 Kunci & Keluar</button>
       </div>
     </div>
   </header>
 
-  <!-- Main Content -->
-  <main class="max-w-7xl mx-auto px-4 py-8 flex-1 w-full space-y-8">
+  <!-- Main Content (Tersembunyi sampai password benar) -->
+  <main id="admin-main-content" class="hidden max-w-7xl mx-auto px-4 py-8 flex-1 w-full space-y-8">
     
     <!-- Stats Summary -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -62,7 +62,7 @@
         <p id="stat-free" class="text-2xl font-black text-emerald-400 mt-1">0</p>
       </div>
       <div class="glass-card p-5 rounded-2xl">
-        <p class="text-xs text-rose-400">Total Slot Terbooking Hari Ini</p>
+        <p class="text-xs text-rose-400">Total Slot Terbooking</p>
         <p id="stat-occupied" class="text-2xl font-black text-rose-400 mt-1">0</p>
       </div>
       <div class="glass-card p-5 rounded-2xl">
@@ -71,14 +71,19 @@
       </div>
     </div>
 
-    <!-- Rekap Daftar Peminjam Hari Ini -->
+    <!-- Jadwal Peminjaman & Reset Mingguan -->
     <div class="glass-card rounded-3xl p-6 space-y-4 border border-indigo-500/30">
-      <div class="flex flex-wrap justify-between items-center gap-3 border-b border-slate-800 pb-3">
+      <div class="flex flex-wrap justify-between items-center gap-3 border-b border-slate-800 pb-4">
         <div>
-          <h2 class="text-base font-extrabold text-white">📋 Daftar Peminjam Hari Ini (Semua Unit & Sesi)</h2>
+          <h2 class="text-base font-extrabold text-white">📋 Jadwal Peminjaman Aktif (Bisa Dihapus / Reset Mingguan)</h2>
           <p id="today-log-subtitle" class="text-xs text-slate-400">Memuat daftar peminjam...</p>
         </div>
-        <input type="text" id="search-booking-input" oninput="renderTodayBookingsLog()" placeholder="🔍 Cari nama peminjam / PC..." class="px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white w-full sm:w-64">
+        <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <input type="text" id="search-booking-input" oninput="renderBookingsLog()" placeholder="🔍 Cari nama peminjam / PC..." class="px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white flex-1 sm:w-56">
+          <button type="button" onclick="resetAllBookingsWeekly()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-extrabold shadow-md shadow-rose-600/20">
+            🗑️ Reset Semua Booking Minggu Ini (Gadget & PC)
+          </button>
+        </div>
       </div>
       <div class="overflow-x-auto max-h-80 overflow-y-auto">
         <table class="w-full text-left border-collapse">
@@ -86,9 +91,10 @@
             <tr class="border-b border-slate-800 text-[11px] uppercase text-slate-400">
               <th class="py-2.5 px-3">Unit</th>
               <th class="py-2.5 px-3">Kategori</th>
+              <th class="py-2.5 px-3">Tanggal / Pekan</th>
               <th class="py-2.5 px-3">Sesi Waktu</th>
               <th class="py-2.5 px-3">Nama Peminjam</th>
-              <th class="py-2.5 px-3 text-right">Hapus</th>
+              <th class="py-2.5 px-3 text-right">Aksi Hapus</th>
             </tr>
           </thead>
           <tbody id="today-bookings-tbody" class="divide-y divide-slate-800/60 text-xs"></tbody>
@@ -100,8 +106,8 @@
     <div class="glass-card rounded-3xl p-6 space-y-6">
       <div class="flex flex-wrap justify-between items-center gap-2 border-b border-slate-800 pb-3">
         <div>
-          <h2 class="text-base font-extrabold text-white">⏰ Pengaturan Jam Sesi (07.00 – 17.00 WIB)</h2>
-          <p class="text-xs text-slate-400">Atur rentang waktu untuk KBM (Senin–Kamis), Non-KBM Hari Biasa (14.00–17.00), dan Non-KBM Khusus Jumat (07.30–17.00).</p>
+          <h2 class="text-base font-extrabold text-white">⏰ Pengaturan Jam Sesi (Jeda Sholat 15.00 – 16.00)</h2>
+          <p class="text-xs text-slate-400">Atur rentang waktu untuk KBM (Senin–Kamis), Non-KBM Hari Biasa (14.00–15.00 & 16.00–17.00), dan Non-KBM Khusus Jumat.</p>
         </div>
         <button type="button" onclick="saveSchedules()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold">💾 Simpan Semua Jadwal</button>
       </div>
@@ -112,12 +118,12 @@
       </div>
 
       <div class="space-y-2">
-        <h3 class="text-xs font-extrabold text-cyan-400 uppercase tracking-wider">2. Jadwal Non-KBM Hari Biasa (Senin – Kamis, 14.00 – 17.00)</h3>
+        <h3 class="text-xs font-extrabold text-cyan-400 uppercase tracking-wider">2. Jadwal Non-KBM Hari Biasa (14.00 – 15.00 & 16.00 – 17.00)</h3>
         <div id="schedules-nonkbm-reg-editor" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
       </div>
 
       <div class="space-y-2">
-        <h3 class="text-xs font-extrabold text-violet-400 uppercase tracking-wider">3. Jadwal Non-KBM Khusus Hari Jumat (07.30 – 17.00)</h3>
+        <h3 class="text-xs font-extrabold text-violet-400 uppercase tracking-wider">3. Jadwal Non-KBM Khusus Setiap Hari Jumat (Jeda Sholat 15.00 – 16.00)</h3>
         <div id="schedules-nonkbm-fri-editor" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
       </div>
     </div>
@@ -138,7 +144,7 @@
             <tr class="border-b border-slate-800 text-[11px] uppercase text-slate-400">
               <th class="py-3 px-3">ID Unit</th>
               <th class="py-3 px-3">Kondisi Unit</th>
-              <th class="py-3 px-3">Jadwal Booking Hari Ini (Per Sesi)</th>
+              <th class="py-3 px-3">Jadwal Booking Aktif (Per Sesi)</th>
               <th class="py-3 px-3 text-right">Aksi Kontrol</th>
             </tr>
           </thead>
@@ -157,8 +163,10 @@
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const MASTER_PIN = "1234";
+    let isAuthenticated = false;
     let activeTab = 'GADGET';
     let isSaving = false;
+    let syncIntervalId = null;
     let allDevices = { GADGET: {}, PC: {} };
 
     let kbmSchedules = {
@@ -169,15 +177,15 @@
     };
 
     let nonKbmWeekdaySchedules = {
-      'Non-KBM 1': { label: '14:00 - 15:30', minutes: 90 },
-      'Non-KBM 2': { label: '15:30 - 17:00', minutes: 90 }
+      'Non-KBM 1': { label: '14:00 - 15:00', minutes: 60 },
+      'Non-KBM 2': { label: '16:00 - 17:00', minutes: 60 }
     };
 
     let nonKbmFridaySchedules = {
       'Non-KBM 1': { label: '07:30 - 09:30', minutes: 120 },
       'Non-KBM 2': { label: '09:30 - 11:30', minutes: 120 },
-      'Non-KBM 3': { label: '13:00 - 15:00', minutes: 120 },
-      'Non-KBM 4': { label: '15:00 - 17:00', minutes: 120 }
+      'Non-KBM 3': { label: '13:30 - 15:00', minutes: 90 },
+      'Non-KBM 4': { label: '16:00 - 17:00', minutes: 60 }
     };
 
     function getTodayDateString() {
@@ -185,11 +193,24 @@
       return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     }
 
+    function getWeekIdentifier(dateObj = new Date()) {
+      const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+    }
+
+    // Password wajib dimasukkan setiap kali masuk ke admin.html
     function checkAdminLogin() {
-      const pin = document.getElementById('admin-pin-input').value;
+      const pin = document.getElementById('admin-pin-input').value.trim();
       if (pin === MASTER_PIN) {
-        sessionStorage.setItem('labkom_admin_auth', 'true');
+        isAuthenticated = true;
+        document.getElementById('admin-pin-input').value = '';
+        document.getElementById('admin-login-error').classList.add('hidden');
         document.getElementById('admin-login-overlay').classList.add('hidden');
+        document.getElementById('admin-main-content').classList.remove('hidden');
         initAdmin();
       } else {
         document.getElementById('admin-login-error').classList.remove('hidden');
@@ -197,13 +218,17 @@
     }
 
     function logoutAdmin() {
-      sessionStorage.removeItem('labkom_admin_auth');
-      location.reload();
+      isAuthenticated = false;
+      if (syncIntervalId) clearInterval(syncIntervalId);
+      document.getElementById('admin-main-content').classList.add('hidden');
+      document.getElementById('admin-login-overlay').classList.remove('hidden');
+      document.getElementById('admin-pin-input').value = '';
     }
 
-    function cleanOldDayBookings(stateObj) {
+    function cleanExpiredBookings(stateObj) {
       let changed = false;
       const today = getTodayDateString();
+      const currentWeek = getWeekIdentifier();
       Object.keys(stateObj).forEach(id => {
         const dev = stateObj[id];
         if (!dev) return;
@@ -213,7 +238,10 @@
         }
         Object.keys(dev.bookings).forEach(slot => {
           const b = dev.bookings[slot];
-          if (b && b.date && b.date !== today) {
+          if (!b) return;
+          const isDifferentDay = b.date && b.date !== today;
+          const isDifferentWeek = b.weekId && b.weekId !== currentWeek;
+          if (isDifferentDay || isDifferentWeek) {
             delete dev.bookings[slot];
             changed = true;
           }
@@ -234,7 +262,7 @@
     }
 
     async function syncAllFromCloud() {
-      if (isSaving) return;
+      if (!isAuthenticated || isSaving) return;
       for (const cat of ['GADGET', 'PC']) {
         const key = `labkom_devices_${cat}`;
         const { data, error } = await sb.from('labkom_store').select('payload').eq('id', key).maybeSingle();
@@ -244,7 +272,7 @@
           allDevices[cat] = getDefaultDevices(cat);
         }
 
-        if (cleanOldDayBookings(allDevices[cat])) {
+        if (cleanExpiredBookings(allDevices[cat])) {
           await sb.from('labkom_store').upsert({ id: key, payload: allDevices[cat], updated_at: new Date().toISOString() });
         }
       }
@@ -258,7 +286,7 @@
       }
 
       renderStats();
-      renderTodayBookingsLog();
+      renderBookingsLog();
       renderSchedules();
       renderDeviceTable();
     }
@@ -268,7 +296,7 @@
       const key = `labkom_devices_${cat}`;
       localStorage.setItem(key, JSON.stringify(allDevices[cat]));
       renderStats();
-      renderTodayBookingsLog();
+      renderBookingsLog();
       renderDeviceTable();
       await sb.from('labkom_store').upsert({ id: key, payload: allDevices[cat], updated_at: new Date().toISOString() });
       isSaving = false;
@@ -276,16 +304,13 @@
 
     function renderStats() {
       let total = 0, normal = 0, totalSlots = 0, maintenance = 0;
-      const today = getTodayDateString();
       ['GADGET', 'PC'].forEach(cat => {
         Object.values(allDevices[cat]).forEach(d => {
           total++;
           if (d.status === 'maintenance') maintenance++;
           else normal++;
           if (d.bookings) {
-            Object.values(d.bookings).forEach(b => {
-              if (b && b.date === today) totalSlots++;
-            });
+            totalSlots += Object.keys(d.bookings).length;
           }
         });
       });
@@ -295,21 +320,20 @@
       document.getElementById('stat-maintenance').innerText = maintenance;
     }
 
-    function renderTodayBookingsLog() {
+    function renderBookingsLog() {
       const tbody = document.getElementById('today-bookings-tbody');
       const subtitle = document.getElementById('today-log-subtitle');
       if (!tbody) return;
 
       const keyword = (document.getElementById('search-booking-input')?.value || '').toLowerCase().trim();
-      const today = getTodayDateString();
       const rows = [];
 
       ['GADGET', 'PC'].forEach(cat => {
         Object.values(allDevices[cat] || {}).forEach(dev => {
           if (!dev.bookings) return;
           Object.entries(dev.bookings).forEach(([slotKey, b]) => {
-            if (b && b.date === today) {
-              const matchText = `${dev.id} ${cat} ${b.sessionName} ${b.timeLabel} ${b.user}`.toLowerCase();
+            if (b) {
+              const matchText = `${dev.id} ${cat} ${b.sessionName} ${b.timeLabel} ${b.user} ${b.date || ''}`.toLowerCase();
               if (!keyword || matchText.includes(keyword)) {
                 rows.push({ cat, devId: dev.id, slotKey, ...b });
               }
@@ -318,10 +342,10 @@
         });
       });
 
-      subtitle.innerText = `Menampilkan ${rows.length} catatan booking aktif hari ini (${new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })})`;
+      subtitle.innerText = `Menampilkan ${rows.length} jadwal peminjaman aktif (Pekan: ${getWeekIdentifier()})`;
 
       if (rows.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-500">Belum ada data peminjam hari ini.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-500">Tidak ada jadwal peminjaman yang tersimpan saat ini.</td></tr>`;
         return;
       }
 
@@ -329,10 +353,11 @@
         <tr class="hover:bg-slate-900/40">
           <td class="py-2.5 px-3 font-extrabold text-white">${r.devId}</td>
           <td class="py-2.5 px-3 text-slate-400">${r.cat}</td>
+          <td class="py-2.5 px-3 text-slate-400 text-[11px]">${r.date || '-'}</td>
           <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold text-[11px]">${r.sessionName}</span> <span class="text-slate-500 text-[11px]">(${r.timeLabel || '-'})</span></td>
           <td class="py-2.5 px-3 font-bold text-emerald-300">👤 ${r.user}</td>
           <td class="py-2.5 px-3 text-right">
-            <button type="button" onclick="removeBookingFromCat('${r.cat}', '${r.devId}', '${r.slotKey}')" class="px-2 py-1 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white rounded-lg text-[11px] font-bold">Hapus</button>
+            <button type="button" onclick="removeBookingFromCat('${r.cat}', '${r.devId}', '${r.slotKey}')" class="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white rounded-lg text-[11px] font-bold">🗑️ Hapus</button>
           </td>
         </tr>
       `).join('');
@@ -343,6 +368,17 @@
         delete allDevices[cat][devId].bookings[slotKey];
         await saveCategoryToCloud(cat);
       }
+    }
+
+    async function resetAllBookingsWeekly() {
+      if (!confirm('Hapus SEMUA bookingan minggu ini di seluruh Gadget & PC agar bersih untuk minggu depan?')) return;
+      for (const cat of ['GADGET', 'PC']) {
+        Object.keys(allDevices[cat]).forEach(id => {
+          allDevices[cat][id] = { ...allDevices[cat][id], bookings: {}, alarmLocked: false };
+        });
+        await saveCategoryToCloud(cat);
+      }
+      alert('Berhasil! Semua jadwal booking Gadget & PC sudah dibersihkan untuk pekan baru.');
     }
 
     function buildScheduleInputs(containerId, prefix, mapObj) {
@@ -389,7 +425,7 @@
         nonKbmFriday: nonKbmFridaySchedules
       };
       await sb.from('labkom_store').upsert({ id: 'labkom_schedules', payload, updated_at: new Date().toISOString() });
-      alert('Semua jadwal (KBM, Non-KBM Hari Biasa, & Non-KBM Jumat) berhasil diperbarui!');
+      alert('Semua jadwal berhasil diperbarui!');
     }
 
     function switchTab(cat) {
@@ -402,11 +438,10 @@
     function renderDeviceTable() {
       const tbody = document.getElementById('admin-device-table');
       const devices = Object.values(allDevices[activeTab] || {});
-      const today = getTodayDateString();
 
       tbody.innerHTML = devices.map(dev => {
         const bookingsObj = dev.bookings || {};
-        const activeEntries = Object.entries(bookingsObj).filter(([, b]) => b && b.date === today);
+        const activeEntries = Object.entries(bookingsObj);
         const hasBookings = activeEntries.length > 0;
 
         const badge = dev.alarmLocked
@@ -465,7 +500,7 @@
     }
 
     async function resetAllCurrentCategory() {
-      if (!confirm(`Yakin kosongkan semua booking hari ini di kategori ${activeTab}?`)) return;
+      if (!confirm(`Yakin kosongkan semua booking di kategori ${activeTab}?`)) return;
       Object.keys(allDevices[activeTab]).forEach(id => {
         allDevices[activeTab][id] = { ...allDevices[activeTab][id], bookings: {}, alarmLocked: false };
       });
@@ -474,12 +509,8 @@
 
     async function initAdmin() {
       await syncAllFromCloud();
-      setInterval(syncAllFromCloud, 4000);
-    }
-
-    if (sessionStorage.getItem('labkom_admin_auth') === 'true') {
-      document.getElementById('admin-login-overlay').classList.add('hidden');
-      initAdmin();
+      if (syncIntervalId) clearInterval(syncIntervalId);
+      syncIntervalId = setInterval(syncAllFromCloud, 4000);
     }
   </script>
 </body>
