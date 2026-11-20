@@ -38,7 +38,7 @@
         <div class="w-10 h-10 bg-rose-600 rounded-xl flex items-center justify-center font-black text-lg">⚙️</div>
         <div>
           <h1 class="font-extrabold text-base text-white">Admin Control Center</h1>
-          <p class="text-[11px] text-emerald-400">● Cloud Sync & Reset Mingguan Aktif</p>
+          <p class="text-[11px] text-emerald-400">● Cloud Sync & Jadwal Perminggu Aktif</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
@@ -48,7 +48,7 @@
     </div>
   </header>
 
-  <!-- Main Content (Tersembunyi sampai password benar) -->
+  <!-- Main Content -->
   <main id="admin-main-content" class="hidden max-w-7xl mx-auto px-4 py-8 flex-1 w-full space-y-8">
     
     <!-- Stats Summary -->
@@ -75,23 +75,23 @@
     <div class="glass-card rounded-3xl p-6 space-y-4 border border-indigo-500/30">
       <div class="flex flex-wrap justify-between items-center gap-3 border-b border-slate-800 pb-4">
         <div>
-          <h2 class="text-base font-extrabold text-white">📋 Jadwal Peminjaman Aktif (Bisa Dihapus / Reset Mingguan)</h2>
+          <h2 class="text-base font-extrabold text-white">📋 Jadwal Peminjaman Aktif (Semua Hari dalam Pekan Ini)</h2>
           <p id="today-log-subtitle" class="text-xs text-slate-400">Memuat daftar peminjam...</p>
         </div>
         <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          <input type="text" id="search-booking-input" oninput="renderBookingsLog()" placeholder="🔍 Cari nama peminjam / PC..." class="px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white flex-1 sm:w-56">
+          <input type="text" id="search-booking-input" oninput="renderBookingsLog()" placeholder="🔍 Cari nama / tanggal / PC..." class="px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white flex-1 sm:w-56">
           <button type="button" onclick="resetAllBookingsWeekly()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-extrabold shadow-md shadow-rose-600/20">
             🗑️ Reset Semua Booking Minggu Ini (Gadget & PC)
           </button>
         </div>
       </div>
-      <div class="overflow-x-auto max-h-80 overflow-y-auto">
+      <div class="overflow-x-auto max-h-96 overflow-y-auto">
         <table class="w-full text-left border-collapse">
           <thead class="sticky top-0 bg-slate-900">
             <tr class="border-b border-slate-800 text-[11px] uppercase text-slate-400">
               <th class="py-2.5 px-3">Unit</th>
               <th class="py-2.5 px-3">Kategori</th>
-              <th class="py-2.5 px-3">Tanggal / Pekan</th>
+              <th class="py-2.5 px-3">Hari & Tanggal</th>
               <th class="py-2.5 px-3">Sesi Waktu</th>
               <th class="py-2.5 px-3">Nama Peminjam</th>
               <th class="py-2.5 px-3 text-right">Aksi Hapus</th>
@@ -102,18 +102,18 @@
       </div>
     </div>
 
-    <!-- Pengaturan Jadwal Sesi (KBM, Non-KBM Hari Biasa, & Non-KBM Jumat) -->
+    <!-- Pengaturan Jadwal Sesi -->
     <div class="glass-card rounded-3xl p-6 space-y-6">
       <div class="flex flex-wrap justify-between items-center gap-2 border-b border-slate-800 pb-3">
         <div>
           <h2 class="text-base font-extrabold text-white">⏰ Pengaturan Jam Sesi (Jeda Sholat 15.00 – 16.00)</h2>
-          <p class="text-xs text-slate-400">Atur rentang waktu untuk KBM (Senin–Kamis), Non-KBM Hari Biasa (14.00–15.00 & 16.00–17.00), dan Non-KBM Khusus Jumat.</p>
+          <p class="text-xs text-slate-400">Atur rentang waktu untuk KBM (Ahad–Kamis), Non-KBM Hari Biasa (14.00–15.00 & 16.00–17.00), dan Non-KBM Khusus Jumat.</p>
         </div>
         <button type="button" onclick="saveSchedules()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold">💾 Simpan Semua Jadwal</button>
       </div>
 
       <div class="space-y-2">
-        <h3 class="text-xs font-extrabold text-blue-400 uppercase tracking-wider">1. Jadwal KBM (Senin – Kamis, s.d. 14.00)</h3>
+        <h3 class="text-xs font-extrabold text-blue-400 uppercase tracking-wider">1. Jadwal KBM (Ahad – Kamis, s.d. 14.00)</h3>
         <div id="schedules-kbm-editor" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
       </div>
 
@@ -144,7 +144,7 @@
             <tr class="border-b border-slate-800 text-[11px] uppercase text-slate-400">
               <th class="py-3 px-3">ID Unit</th>
               <th class="py-3 px-3">Kondisi Unit</th>
-              <th class="py-3 px-3">Jadwal Booking Aktif (Per Sesi)</th>
+              <th class="py-3 px-3">Jadwal Booking Aktif (Semua Hari & Sesi)</th>
               <th class="py-3 px-3 text-right">Aksi Kontrol</th>
             </tr>
           </thead>
@@ -184,25 +184,21 @@
     let nonKbmFridaySchedules = {
       'Non-KBM 1': { label: '07:30 - 09:30', minutes: 120 },
       'Non-KBM 2': { label: '09:30 - 11:30', minutes: 120 },
-      'Non-KBM 3': { label: '13:30 - 15:00', minutes: 90 },
+      'Non-KBM 3': { label: '14:00 - 15:00', minutes: 60 },
       'Non-KBM 4': { label: '16:00 - 17:00', minutes: 60 }
     };
 
-    function getTodayDateString() {
-      const now = new Date();
-      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    function formatIndoDateLabel(ymd) {
+      if (!ymd) return '-';
+      const [y, m, d] = ymd.split('-').map(Number);
+      const dateObj = new Date(y, m - 1, d);
+      const dayName = dateObj.getDay() === 0
+        ? 'Ahad'
+        : dateObj.toLocaleDateString('id-ID', { weekday: 'long' });
+      const rest = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+      return `${dayName}, ${rest}`;
     }
 
-    function getWeekIdentifier(dateObj = new Date()) {
-      const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
-      const dayNum = d.getUTCDay() || 7;
-      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-      const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-      return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
-    }
-
-    // Password wajib dimasukkan setiap kali masuk ke admin.html
     function checkAdminLogin() {
       const pin = document.getElementById('admin-pin-input').value.trim();
       if (pin === MASTER_PIN) {
@@ -223,31 +219,6 @@
       document.getElementById('admin-main-content').classList.add('hidden');
       document.getElementById('admin-login-overlay').classList.remove('hidden');
       document.getElementById('admin-pin-input').value = '';
-    }
-
-    function cleanExpiredBookings(stateObj) {
-      let changed = false;
-      const today = getTodayDateString();
-      const currentWeek = getWeekIdentifier();
-      Object.keys(stateObj).forEach(id => {
-        const dev = stateObj[id];
-        if (!dev) return;
-        if (!dev.bookings || typeof dev.bookings !== 'object') {
-          dev.bookings = {};
-          changed = true;
-        }
-        Object.keys(dev.bookings).forEach(slot => {
-          const b = dev.bookings[slot];
-          if (!b) return;
-          const isDifferentDay = b.date && b.date !== today;
-          const isDifferentWeek = b.weekId && b.weekId !== currentWeek;
-          if (isDifferentDay || isDifferentWeek) {
-            delete dev.bookings[slot];
-            changed = true;
-          }
-        });
-      });
-      return changed;
     }
 
     function getDefaultDevices(cat) {
@@ -271,18 +242,22 @@
         } else {
           allDevices[cat] = getDefaultDevices(cat);
         }
-
-        if (cleanExpiredBookings(allDevices[cat])) {
-          await sb.from('labkom_store').upsert({ id: key, payload: allDevices[cat], updated_at: new Date().toISOString() });
-        }
+        Object.keys(allDevices[cat]).forEach(id => {
+          if (!allDevices[cat][id].bookings || typeof allDevices[cat][id].bookings !== 'object') {
+            allDevices[cat][id].bookings = {};
+          }
+        });
       }
 
       const { data: schedRow } = await sb.from('labkom_store').select('payload').eq('id', 'labkom_schedules').maybeSingle();
       if (schedRow && schedRow.payload) {
         if (schedRow.payload.kbm) kbmSchedules = schedRow.payload.kbm;
-        else kbmSchedules = schedRow.payload;
-        if (schedRow.payload.nonKbmWeekday) nonKbmWeekdaySchedules = schedRow.payload.nonKbmWeekday;
-        if (schedRow.payload.nonKbmFriday) nonKbmFridaySchedules = schedRow.payload.nonKbmFriday;
+        if (schedRow.payload.nonKbmWeekday && Object.values(schedRow.payload.nonKbmWeekday).some(s => s.label.includes('14:00'))) {
+          nonKbmWeekdaySchedules = schedRow.payload.nonKbmWeekday;
+        }
+        if (schedRow.payload.nonKbmFriday && Object.values(schedRow.payload.nonKbmFriday).some(s => s.label.includes('14:00'))) {
+          nonKbmFridaySchedules = schedRow.payload.nonKbmFriday;
+        }
       }
 
       renderStats();
@@ -333,16 +308,18 @@
           if (!dev.bookings) return;
           Object.entries(dev.bookings).forEach(([slotKey, b]) => {
             if (b) {
-              const matchText = `${dev.id} ${cat} ${b.sessionName} ${b.timeLabel} ${b.user} ${b.date || ''}`.toLowerCase();
+              const dayText = b.dayLabel || formatIndoDateLabel(b.date);
+              const matchText = `${dev.id} ${cat} ${b.sessionName} ${b.timeLabel} ${b.user} ${dayText} ${b.date || ''}`.toLowerCase();
               if (!keyword || matchText.includes(keyword)) {
-                rows.push({ cat, devId: dev.id, slotKey, ...b });
+                rows.push({ cat, devId: dev.id, slotKey, dayText, ...b });
               }
             }
           });
         });
       });
 
-      subtitle.innerText = `Menampilkan ${rows.length} jadwal peminjaman aktif (Pekan: ${getWeekIdentifier()})`;
+      rows.sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.devId.localeCompare(b.devId));
+      subtitle.innerText = `Menampilkan ${rows.length} jadwal peminjaman aktif (Bisa dihapus satuan atau di-reset sekaligus)`;
 
       if (rows.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-500">Tidak ada jadwal peminjaman yang tersimpan saat ini.</td></tr>`;
@@ -353,7 +330,7 @@
         <tr class="hover:bg-slate-900/40">
           <td class="py-2.5 px-3 font-extrabold text-white">${r.devId}</td>
           <td class="py-2.5 px-3 text-slate-400">${r.cat}</td>
-          <td class="py-2.5 px-3 text-slate-400 text-[11px]">${r.date || '-'}</td>
+          <td class="py-2.5 px-3 font-semibold text-amber-300 text-[11px]">📆 ${r.dayText}</td>
           <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold text-[11px]">${r.sessionName}</span> <span class="text-slate-500 text-[11px]">(${r.timeLabel || '-'})</span></td>
           <td class="py-2.5 px-3 font-bold text-emerald-300">👤 ${r.user}</td>
           <td class="py-2.5 px-3 text-right">
@@ -449,14 +426,15 @@
           : dev.status === 'maintenance'
           ? '<span class="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400 font-bold text-[10px]">Rusak</span>'
           : hasBookings
-          ? `<span class="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-400 font-bold text-[10px]">${activeEntries.length} Sesi Terisi</span>`
+          ? `<span class="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-400 font-bold text-[10px]">${activeEntries.length} Slot Terisi</span>`
           : '<span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-[10px]">Normal / Kosong</span>';
 
         const bookingsHtml = hasBookings
           ? `<div class="flex flex-wrap gap-1.5">${activeEntries.map(([slotKey, b]) => `
               <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-[11px] text-slate-200">
+                <strong class="text-amber-300">[${b.dayLabel || formatIndoDateLabel(b.date)}]</strong>
                 <strong class="text-indigo-400">${b.sessionName} (${b.timeLabel || ''}):</strong> ${b.user}
-                <button type="button" onclick="removeSingleBooking('${dev.id}', '${slotKey}')" class="text-rose-400 hover:text-rose-300 font-black ml-1" title="Hapus booking sesi ini">✕</button>
+                <button type="button" onclick="removeSingleBooking('${dev.id}', '${slotKey}')" class="text-rose-400 hover:text-rose-300 font-black ml-1" title="Hapus booking ini">✕</button>
               </span>
             `).join('')}</div>`
           : '<span class="text-slate-500">-</span>';
