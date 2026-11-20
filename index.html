@@ -3,160 +3,280 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Panel - Labkom Al-Umanaa</title>
+  <title>Labkom Al-Umanaa - Main System</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .card-3d { transition: all 0.25s ease; }
+    .card-3d:hover { transform: translateY(-6px); }
+    .seat { transition: all 0.2s ease; }
+    .seat:hover:not(.occupied):not(.maintenance) { transform: translateY(-3px); }
+    @keyframes pulse-red { 0%, 100% { background-color: #450a0a; } 50% { background-color: #991b1b; } }
+    .lock-screen-active { animation: pulse-red 1.2s infinite; }
     .glass-card { background: rgba(30, 41, 59, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen antialiased flex flex-col justify-between">
-
-  <!-- Login Overlay -->
-  <div id="admin-login-overlay" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4">
-    <div class="glass-card rounded-3xl p-8 max-w-sm w-full text-center space-y-5 border border-rose-500/30 shadow-2xl">
-      <div class="w-16 h-16 bg-rose-500/20 text-rose-400 rounded-2xl flex items-center justify-center text-3xl mx-auto">🔐</div>
-      <div>
-        <h2 class="text-xl font-black text-white">Akses Terkunci - Admin Labkom</h2>
-        <p class="text-xs text-slate-400 mt-1">Masukkan Password / Master PIN untuk membuka Panel Admin.</p>
-      </div>
-      <form onsubmit="event.preventDefault(); checkAdminLogin();" class="space-y-3">
-        <input type="password" id="admin-pin-input" autocomplete="off" placeholder="Masukkan PIN Admin" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-center font-bold tracking-widest text-lg text-white focus:border-indigo-500 outline-none">
-        <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-indigo-600/25">🔓 BUKA ADMIN PANEL</button>
-      </form>
-      <p id="admin-login-error" class="text-xs text-rose-400 font-semibold hidden">⚠️ Password / PIN Salah! Akses ditolak.</p>
-      <a href="index.html" class="block text-xs text-slate-400 hover:text-white pt-2">← Kembali ke Halaman Utama</a>
-    </div>
-  </div>
 
   <!-- Header -->
   <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-30 backdrop-blur-md">
     <div class="max-w-7xl mx-auto px-4 py-3.5 flex flex-wrap justify-between items-center gap-4">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-rose-600 rounded-xl flex items-center justify-center font-black text-lg">⚙️</div>
+        <div class="w-10 h-10 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-xl flex items-center justify-center font-black text-xl">🖥️</div>
         <div>
-          <h1 class="font-extrabold text-base text-white">Admin Control Center</h1>
-          <p id="cloud-sync-status" class="text-[11px] text-emerald-400">● Cloud Sync Aktif (Data Lama & Baru Terbaca)</p>
+          <h1 class="font-extrabold text-lg leading-tight text-white">Labkom Al-Umanaa</h1>
+          <p id="device-indicator" class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Booking Jauh-Jauh Hari & Per Sesi (07.00 - 17.00)
+          </p>
         </div>
       </div>
-      <div class="flex items-center gap-2">
-        <button type="button" onclick="syncAllFromCloud(true)" class="px-3.5 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-bold">🔄 Refresh Data Cloud</button>
-        <a href="index.html" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold">🏠 Lihat Denah</a>
-        <button type="button" onclick="logoutAdmin()" class="px-4 py-2 bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-bold">🔒 Keluar</button>
+      <div class="flex items-center gap-2 bg-slate-900 p-1.5 rounded-xl border border-slate-800">
+        <button type="button" onclick="switchView('menu')" id="btn-nav-menu" class="px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 text-white">🏠 Main Menu</button>
+        <button type="button" onclick="switchView('grid')" id="btn-nav-grid" class="px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white">📋 Denah Perangkat</button>
+        <a href="admin.html" class="px-4 py-2 rounded-lg text-xs font-bold text-rose-400 hover:text-rose-300">🔐 Admin Panel</a>
       </div>
     </div>
   </header>
 
-  <!-- Main Content -->
-  <main id="admin-main-content" class="hidden max-w-7xl mx-auto px-4 py-8 flex-1 w-full space-y-8">
+  <!-- Lock Screen Alarm Overlay -->
+  <div id="lock-screen" class="hidden fixed inset-0 z-50 flex flex-col items-center justify-center p-6 text-center text-white backdrop-blur-xl">
+    <div class="glass-card border-2 border-red-500 rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-4">
+      <div class="w-20 h-20 bg-red-500/20 rounded-2xl flex items-center justify-center text-4xl mx-auto animate-bounce">🚨</div>
+      <div>
+        <h2 class="text-2xl font-black text-red-400">PERANGKAT DIKUNCI ADMIN!</h2>
+        <p class="text-slate-300 text-xs mt-1">Perangkat <span id="lock-device-id" class="font-bold text-amber-400">LD-XX</span> sedang dikunci oleh pengawas Labkom.</p>
+      </div>
+      <div class="space-y-3 pt-2">
+        <input type="password" id="unlock-pin" placeholder="Masukkan Master PIN Admin" class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-center font-bold tracking-widest text-lg text-white">
+        <button type="button" onclick="attemptUnlock()" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-sm">BUKA KUNCI PERANGKAT</button>
+      </div>
+      <p id="lock-error" class="text-xs text-red-400 font-semibold hidden">⚠️ PIN Admin Salah!</p>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <main class="max-w-7xl mx-auto px-4 py-8 flex-1 w-full">
     
-    <!-- Stats Summary -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-      <div class="glass-card p-5 rounded-2xl">
-        <p class="text-xs text-slate-400">Total Perangkat</p>
-        <p id="stat-total" class="text-2xl font-black text-white mt-1">38</p>
+    <!-- View 1: Menu -->
+    <div id="view-menu" class="space-y-8 py-4">
+      <div class="text-center space-y-3">
+        <h2 class="text-3xl font-black text-white">Labkom Main Menu</h2>
+        
+        <div class="inline-flex flex-wrap items-center justify-center gap-3 px-5 py-2.5 rounded-2xl bg-slate-900/90 border border-indigo-500/30 shadow-lg">
+          <span id="live-date-display" class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">📅 Memuat...</span>
+          <span class="text-slate-700">|</span>
+          <span id="live-week-display" class="px-3 py-1 rounded-full bg-indigo-600/30 border border-indigo-500/50 text-indigo-300 text-xs font-extrabold tracking-wide">🗓️ Pekan ke-...</span>
+        </div>
+
+        <p class="text-xs text-slate-400">Bisa pilih tanggal untuk <strong>booking jauh-jauh hari</strong> di dalam denah. <strong>KBM (07.00 – 14.00, tutup tiap Jumat)</strong> • <strong>Non-KBM (s.d. 17.00, jeda sholat 15.00–16.00)</strong>.</p>
       </div>
-      <div class="glass-card p-5 rounded-2xl">
-        <p class="text-xs text-emerald-400">Unit Normal</p>
-        <p id="stat-free" class="text-2xl font-black text-emerald-400 mt-1">0</p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div id="card-gadget-kbm" onclick="openService('Gadget KBM', 'GADGET', true)" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-5 cursor-pointer border hover:border-indigo-500">
+          <div class="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-xl">📱</div>
+          <div>
+            <h3 class="font-extrabold text-blue-400 text-base">Booking Gadget KBM</h3>
+            <p id="desc-gadget-kbm" class="text-xs text-slate-400 mt-1">Laptop DELL & Chromebook saat jam KBM (07.00 - 14.00).</p>
+          </div>
+          <span id="action-gadget-kbm" class="text-xs font-bold text-blue-400">Buka Denah Gadget →</span>
+        </div>
+
+        <div onclick="openService('Gadget Non-KBM', 'GADGET', false)" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-5 cursor-pointer border hover:border-indigo-500">
+          <div class="w-12 h-12 rounded-2xl bg-cyan-500 text-white flex items-center justify-center text-xl">💻</div>
+          <div>
+            <h3 class="font-extrabold text-cyan-400 text-base">Booking Non-KBM Gadgets</h3>
+            <p class="text-xs text-slate-400 mt-1">Sesi 14.00–15.00 & 16.00–17.00 (Jeda Sholat 15.00–16.00).</p>
+          </div>
+          <span class="text-xs font-bold text-cyan-400">Buka Denah Gadget →</span>
+        </div>
+
+        <div id="card-pc-kbm" onclick="openService('PC KBM', 'PC', true)" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-5 cursor-pointer border hover:border-indigo-500">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-xl">🖥️</div>
+          <div>
+            <h3 class="font-extrabold text-emerald-400 text-base">Booking PC KBM</h3>
+            <p id="desc-pc-kbm" class="text-xs text-slate-400 mt-1">Komputer PC Desktop saat jam KBM (07.00 - 14.00).</p>
+          </div>
+          <span id="action-pc-kbm" class="text-xs font-bold text-emerald-400">Buka Denah PC →</span>
+        </div>
+
+        <div onclick="openService('PC Non-KBM', 'PC', false)" class="card-3d glass-card rounded-3xl p-6 flex flex-col justify-between space-y-5 cursor-pointer border hover:border-indigo-500">
+          <div class="w-12 h-12 rounded-2xl bg-violet-600 text-white flex items-center justify-center text-xl">🕹️</div>
+          <div>
+            <h3 class="font-extrabold text-violet-400 text-base">Booking PC Non-KBM</h3>
+            <p class="text-xs text-slate-400 mt-1">Sesi 14.00–15.00 & 16.00–17.00 (Jeda Sholat 15.00–16.00).</p>
+          </div>
+          <span class="text-xs font-bold text-violet-400">Buka Denah PC →</span>
+        </div>
       </div>
-      <div class="glass-card p-5 rounded-2xl">
-        <p class="text-xs text-rose-400">Total Slot Terbooking</p>
-        <p id="stat-occupied" class="text-2xl font-black text-rose-400 mt-1">0</p>
-      </div>
-      <div class="glass-card p-5 rounded-2xl">
-        <p class="text-xs text-amber-400">Perawatan / Rusak</p>
-        <p id="stat-maintenance" class="text-2xl font-black text-amber-400 mt-1">0</p>
+
+      <div class="max-w-xs mx-auto pt-2">
+        <a href="admin.html" class="card-3d glass-card rounded-3xl p-5 flex flex-col items-center text-center space-y-2 border border-rose-500/30 hover:border-rose-500">
+          <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-lg">🔐</div>
+          <div>
+            <h3 class="font-bold text-rose-400 text-sm">Panel Admin (Wajib PIN)</h3>
+            <p class="text-[11px] text-slate-400">Kelola Jadwal, Reset Mingguan & Alarm</p>
+          </div>
+        </a>
       </div>
     </div>
 
-    <!-- Jadwal Peminjaman & Reset Mingguan -->
-    <div class="glass-card rounded-3xl p-6 space-y-4 border border-indigo-500/30">
-      <div class="flex flex-wrap justify-between items-center gap-3 border-b border-slate-800 pb-4">
+    <!-- View 2: Denah Perangkat -->
+    <div id="view-grid" class="hidden space-y-6">
+      <div class="glass-card rounded-2xl p-3.5 flex flex-wrap justify-between items-center gap-3">
+        <p class="text-[11px] font-bold uppercase tracking-widest text-indigo-400">Papan Layar Utama / Meja Pengawas Labkom</p>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center gap-1 bg-slate-950/90 p-1 rounded-xl border border-slate-800">
+            <button type="button" id="quick-mode-kbm" onclick="switchModeDirect(true)" class="px-3 py-1.5 rounded-lg text-xs font-extrabold bg-blue-600 text-white transition">📚 KBM</button>
+            <button type="button" id="quick-mode-nonkbm" onclick="switchModeDirect(false)" class="px-3 py-1.5 rounded-lg text-xs font-extrabold text-slate-400 hover:text-white transition">🕒 Non-KBM</button>
+          </div>
+          <div class="flex items-center gap-1 bg-slate-950/90 p-1 rounded-xl border border-slate-800">
+            <button type="button" id="quick-switch-gadget" onclick="switchCategoryDirect('GADGET')" class="px-3 py-1.5 rounded-lg text-xs font-extrabold bg-indigo-600 text-white transition">📱 Gadget</button>
+            <button type="button" id="quick-switch-pc" onclick="switchCategoryDirect('PC')" class="px-3 py-1.5 rounded-lg text-xs font-extrabold text-slate-400 hover:text-white transition">🖥️ PC</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pemilih Hari & Tanggal -->
+      <div class="glass-card rounded-2xl p-4 space-y-3 border border-emerald-500/30">
+        <div class="flex flex-wrap justify-between items-center gap-3">
+          <div>
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-emerald-300">📆 Pilih Hari & Tanggal Booking (Bisa Booking Jauh-Jauh Hari):</h3>
+            <p class="text-[11px] text-slate-400">Klik tombol hari di bawah atau pilih tanggal mana saja di kalender. Setiap hari Jumat otomatis mode Non-KBM.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <label class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-emerald-500/40 text-xs font-bold text-emerald-300">
+              <span>📅 Kalender:</span>
+              <input type="date" id="custom-booking-date" onchange="selectBookingDate(this.value)" class="bg-transparent text-white font-extrabold outline-none cursor-pointer">
+            </label>
+            <span id="active-day-badge" class="px-3 py-1.5 rounded-xl bg-emerald-600/20 border border-emerald-500/40 text-emerald-200 text-xs font-bold">Hari Terpilih</span>
+          </div>
+        </div>
+        <div id="week-days-container" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2"></div>
+      </div>
+
+      <!-- Pemilih Sesi Waktu -->
+      <div class="glass-card rounded-2xl p-4 space-y-3 border border-indigo-500/30">
+        <div class="flex flex-wrap justify-between items-center gap-2">
+          <div>
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-indigo-300">🕒 Pilih Jam / Sesi Booking (Maks. 17.00 WIB • Jeda Sholat 15.00–16.00):</h3>
+            <p class="text-[11px] text-slate-400">Booking di satu tanggal/sesi tidak mengganggu jadwal tanggal atau sesi lainnya.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="openAllScheduleModal()" class="px-3.5 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold transition">
+              📅 Lihat Rekap Booking Tanggal Ini
+            </button>
+            <span id="active-session-badge" class="px-3 py-1.5 rounded-xl bg-indigo-600/30 border border-indigo-500/40 text-indigo-200 text-xs font-bold">Sesi Aktif</span>
+          </div>
+        </div>
+        <div id="session-tabs-container" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5"></div>
+      </div>
+
+      <!-- Banner Fitur Booking Semua Unit -->
+      <div class="bg-gradient-to-r from-indigo-900/60 to-violet-900/60 border border-indigo-500/40 rounded-2xl p-4 flex flex-wrap justify-between items-center gap-4 shadow-lg">
         <div>
-          <h2 class="text-base font-extrabold text-white">📋 Daftar Peminjaman Aktif (Gadget & PC)</h2>
-          <p id="today-log-subtitle" class="text-xs text-slate-400">Memuat daftar peminjam...</p>
+          <h3 class="text-sm font-extrabold text-white flex items-center gap-2">⚡ Booking Massal Satu Kelas / Kegiatan</h3>
+          <p id="mass-banner-desc" class="text-xs text-indigo-200 mt-0.5">Pinjam seluruh unit yang tersedia khusus untuk hari & sesi yang dipilih.</p>
         </div>
-        <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          <input type="text" id="search-booking-input" oninput="renderBookingsLog()" placeholder="🔍 Cari nama / tanggal / PC..." class="px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white flex-1 sm:w-56">
-          <button type="button" onclick="resetAllBookingsWeekly()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-extrabold shadow-md shadow-rose-600/20">
-            🗑️ Reset Semua Booking (Gadget & PC)
-          </button>
-        </div>
+        <button type="button" onclick="openMassBookingModal()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-extrabold shadow-md shadow-indigo-600/30 transition">
+          ⚡ Booking Semua Unit Sesi Ini
+        </button>
       </div>
-      <div class="overflow-x-auto max-h-96 overflow-y-auto">
-        <table class="w-full text-left border-collapse">
-          <thead class="sticky top-0 bg-slate-900">
-            <tr class="border-b border-slate-800 text-[11px] uppercase text-slate-400">
-              <th class="py-2.5 px-3">Unit</th>
-              <th class="py-2.5 px-3">Kategori</th>
-              <th class="py-2.5 px-3">Hari & Tanggal</th>
-              <th class="py-2.5 px-3">Sesi Waktu</th>
-              <th class="py-2.5 px-3">Nama Peminjam</th>
-              <th class="py-2.5 px-3 text-right">Aksi Hapus</th>
-            </tr>
-          </thead>
-          <tbody id="today-bookings-tbody" class="divide-y divide-slate-800/60 text-xs"></tbody>
-        </table>
+
+      <div class="glass-card rounded-3xl p-6 sm:p-8 shadow-2xl">
+        <div class="flex flex-wrap justify-between items-center gap-4 mb-6 border-b border-slate-800 pb-4">
+          <div>
+            <h2 id="service-title" class="text-lg font-bold text-white">Denah Tata Letak Perangkat</h2>
+            <p class="text-xs text-slate-400">Klik unit untuk booking, atau klik ikon <span class="text-indigo-300 font-bold">ℹ️</span> pada kartu unit untuk melihat jadwal unit tersebut</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-400">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Tersedia</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Dipakai</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Rusak</span>
+          </div>
+        </div>
+
+        <div id="seats-container" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3.5"></div>
       </div>
     </div>
-
-    <!-- Pengaturan Jadwal Sesi -->
-    <div class="glass-card rounded-3xl p-6 space-y-6">
-      <div class="flex flex-wrap justify-between items-center gap-2 border-b border-slate-800 pb-3">
-        <div>
-          <h2 class="text-base font-extrabold text-white">⏰ Pengaturan Jam Sesi (Jeda Sholat 15.00 – 16.00)</h2>
-          <p class="text-xs text-slate-400">Atur rentang waktu untuk KBM (Ahad–Kamis), Non-KBM Hari Biasa (14.00–15.00 & 16.00–17.00), dan Non-KBM Khusus Jumat.</p>
-        </div>
-        <button type="button" onclick="saveSchedules()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold">💾 Simpan Semua Jadwal</button>
-      </div>
-
-      <div class="space-y-2">
-        <h3 class="text-xs font-extrabold text-blue-400 uppercase tracking-wider">1. Jadwal KBM (Ahad – Kamis, s.d. 14.00)</h3>
-        <div id="schedules-kbm-editor" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
-      </div>
-
-      <div class="space-y-2">
-        <h3 class="text-xs font-extrabold text-cyan-400 uppercase tracking-wider">2. Jadwal Non-KBM Hari Biasa (14.00 – 15.00 & 16.00 – 17.00)</h3>
-        <div id="schedules-nonkbm-reg-editor" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
-      </div>
-
-      <div class="space-y-2">
-        <h3 class="text-xs font-extrabold text-violet-400 uppercase tracking-wider">3. Jadwal Non-KBM Khusus Setiap Hari Jumat (Jeda Sholat 15.00 – 16.00)</h3>
-        <div id="schedules-nonkbm-fri-editor" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
-      </div>
-    </div>
-
-    <!-- Manajemen Perangkat -->
-    <div class="glass-card rounded-3xl p-6 space-y-5">
-      <div class="flex flex-wrap justify-between items-center gap-4 border-b border-slate-800 pb-4">
-        <div class="flex items-center gap-2">
-          <button type="button" onclick="switchTab('GADGET')" id="tab-gadget" class="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white">📱 Gadget (12 Unit)</button>
-          <button type="button" onclick="switchTab('PC')" id="tab-pc" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-400">🖥️ PC Desktop (26 Unit)</button>
-        </div>
-        <button type="button" onclick="resetAllCurrentCategory()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold">🔄 Kosongkan Semua Booking Kategori Ini</button>
-      </div>
-
-      <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="border-b border-slate-800 text-[11px] uppercase text-slate-400">
-              <th class="py-3 px-3">ID Unit</th>
-              <th class="py-3 px-3">Kondisi Unit</th>
-              <th class="py-3 px-3">Jadwal Booking Aktif</th>
-              <th class="py-3 px-3 text-right">Aksi Kontrol</th>
-            </tr>
-          </thead>
-          <tbody id="admin-device-table" class="divide-y divide-slate-800/60 text-xs"></tbody>
-        </table>
-      </div>
-    </div>
-
   </main>
 
-  <footer class="py-4 text-center text-xs text-slate-500 border-t border-slate-900">© Labkom Al-Umanaa Admin System.</footer>
+  <!-- Modal Single Booking -->
+  <div id="booking-modal" class="hidden fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-card rounded-3xl p-6 max-w-md w-full space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <h3 class="font-extrabold text-base text-white">Booking <span id="modal-seat-id" class="text-indigo-400">LD-01</span></h3>
+        <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-white font-bold">✕</button>
+      </div>
+      <div id="modal-seat-existing-info" class="hidden bg-slate-900/90 border border-slate-700 rounded-xl p-3 text-xs space-y-1"></div>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Tanggal Booking (Bisa Pilih Jauh-Jauh Hari)</label>
+          <input type="date" id="modal-date-picker" onchange="onModalDateChange(this.value)" class="w-full px-3.5 py-2.5 bg-slate-900 border border-emerald-500/40 rounded-xl text-emerald-300 font-bold text-xs">
+          <p id="modal-booking-date-label" class="text-[11px] text-emerald-400 font-semibold mt-1">-</p>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Nama Siswa / Peminjam</label>
+          <input type="text" id="input-student-name" placeholder="Contoh: Ahmad Fadil" class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 text-xs">
+        </div>
+        <div>
+          <label id="label-single-session" class="block text-xs font-semibold text-slate-300 mb-1">Sesi Waktu</label>
+          <select id="select-jampel" onchange="onModalSessionChange(this.value)" class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 text-xs"></select>
+        </div>
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button type="button" onclick="closeModal()" class="w-1/2 py-2.5 bg-slate-800 rounded-xl text-slate-300 text-xs font-semibold">Batal</button>
+        <button type="button" onclick="confirmBooking()" class="w-1/2 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold">Konfirmasi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Mass Booking -->
+  <div id="mass-booking-modal" class="hidden fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-card rounded-3xl p-6 max-w-md w-full space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <h3 class="font-extrabold text-base text-white">⚡ Booking Semua Unit (<span id="mass-cat-label">Gadget</span>)</h3>
+        <button type="button" onclick="closeMassModal()" class="text-slate-400 hover:text-white font-bold">✕</button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Tanggal Booking (Bisa Pilih Jauh-Jauh Hari)</label>
+          <input type="date" id="modal-mass-date-picker" onchange="onModalDateChange(this.value)" class="w-full px-3.5 py-2.5 bg-slate-900 border border-emerald-500/40 rounded-xl text-emerald-300 font-bold text-xs">
+          <p id="modal-mass-date-label" class="text-[11px] text-emerald-400 font-semibold mt-1">-</p>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Nama Kelas / Guru / Kegiatan</label>
+          <input type="text" id="input-mass-name" placeholder="Contoh: Ekskul Coding / Pak Budi" class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 text-xs">
+        </div>
+        <div>
+          <label id="label-mass-session" class="block text-xs font-semibold text-slate-300 mb-1">Sesi Waktu</label>
+          <select id="select-mass-jampel" onchange="onModalSessionChange(this.value)" class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 text-xs"></select>
+        </div>
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button type="button" onclick="closeMassModal()" class="w-1/2 py-2.5 bg-slate-800 rounded-xl text-slate-300 text-xs font-semibold">Batal</button>
+        <button type="button" onclick="confirmMassBooking()" class="w-1/2 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold">Booking Semua</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detail Jadwal Unit / Semua Sesi -->
+  <div id="schedule-detail-modal" class="hidden fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-card rounded-3xl p-6 max-w-2xl w-full space-y-4 max-h-[85vh] flex flex-col">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <div>
+          <h3 id="detail-modal-title" class="font-extrabold text-base text-white">📅 Jadwal Booking</h3>
+          <p id="detail-modal-subtitle" class="text-xs text-slate-400">Rincian peminjam per hari & sesi</p>
+        </div>
+        <button type="button" onclick="closeDetailModal()" class="px-3 py-1 bg-slate-800 rounded-lg text-slate-300 hover:text-white font-bold text-xs">✕ Tutup</button>
+      </div>
+      <div id="detail-modal-body" class="overflow-y-auto space-y-2.5 pr-1 flex-1 text-xs"></div>
+    </div>
+  </div>
+
+  <footer class="py-4 text-center text-xs text-slate-500 border-t border-slate-900">© Labkom Al-Umanaa System.</footer>
 
   <script>
     const SUPABASE_URL = 'https://wuvdwtwfeomvuoojsxsz.supabase.co';
@@ -164,99 +284,536 @@
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const MASTER_PIN = "1234";
-    let isAuthenticated = false;
-    let activeTab = 'GADGET';
+    let currentDeviceId = null;
+    let currentCategory = 'GADGET';
+    let selectedDateStr = '';
+    let currentModeIsKbm = true;
+    let selectedSlotKey = 'KBM-1';
+    let selectedSeatId = null;
     let isSaving = false;
-    let syncIntervalId = null;
-    let allDevices = { GADGET: {}, PC: {} };
+    let devicesState = {};
 
-    let kbmSchedules = {
+    const DEFAULT_KBM_SCHEDULES = {
       'KBM-1': { label: '07:00 - 08:20', minutes: 80 },
       'KBM-2': { label: '08:50 - 10:00', minutes: 70 },
       'KBM-3': { label: '10:00 - 11:20', minutes: 80 },
       'KBM-4': { label: '12:40 - 14:00', minutes: 80 }
     };
 
-    let nonKbmWeekdaySchedules = {
+    const DEFAULT_NONKBM_WEEKDAY = {
       'Non-KBM 1': { label: '14:00 - 15:00', minutes: 60 },
       'Non-KBM 2': { label: '16:00 - 17:00', minutes: 60 }
     };
 
-    let nonKbmFridaySchedules = {
+    const DEFAULT_NONKBM_FRIDAY = {
       'Non-KBM 1': { label: '07:30 - 09:30', minutes: 120 },
       'Non-KBM 2': { label: '09:30 - 11:30', minutes: 120 },
       'Non-KBM 3': { label: '14:00 - 15:00', minutes: 60 },
       'Non-KBM 4': { label: '16:00 - 17:00', minutes: 60 }
     };
 
-    function getTodayDateString() {
-      const now = new Date();
-      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    let kbmSchedules = { ...DEFAULT_KBM_SCHEDULES };
+    let nonKbmWeekdaySchedules = { ...DEFAULT_NONKBM_WEEKDAY };
+    let nonKbmFridaySchedules = { ...DEFAULT_NONKBM_FRIDAY };
+    let audioCtx = null;
+
+    function formatDateYMD(dateObj) {
+      return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+    }
+
+    function parseYMDToDate(ymd) {
+      const [y, m, d] = ymd.split('-').map(Number);
+      return new Date(y, m - 1, d);
     }
 
     function formatIndoDateLabel(ymd) {
-      if (!ymd || typeof ymd !== 'string' || !ymd.includes('-')) return 'Hari Ini / Aktif';
-      const parts = ymd.split('-').map(Number);
-      if (parts.length !== 3 || parts.some(isNaN)) return ymd;
-      const [y, m, d] = parts;
-      const dateObj = new Date(y, m - 1, d);
-      const dayName = dateObj.getDay() === 0
-        ? 'Ahad'
-        : dateObj.toLocaleDateString('id-ID', { weekday: 'long' });
-      const rest = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+      if (!ymd) return '-';
+      const d = parseYMDToDate(ymd);
+      const dayName = d.getDay() === 0 ? 'Ahad' : d.toLocaleDateString('id-ID', { weekday: 'long' });
+      const rest = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
       return `${dayName}, ${rest}`;
     }
 
-    // Normalisasi booking lama (baik yang pakai dev.user ataupun key sesi lama tanpa tanggal) agar tidak pernah hilang
-    function normalizeDeviceData(dev) {
-      if (!dev.bookings || typeof dev.bookings !== 'object') {
-        dev.bookings = {};
+    function getTodayDateString() { return formatDateYMD(new Date()); }
+
+    function getNextNonFridayDateString() {
+      const d = new Date();
+      while (d.getDay() === 5) d.setDate(d.getDate() + 1);
+      return formatDateYMD(d);
+    }
+
+    function getQuickWeekDays() {
+      const list = [];
+      const base = new Date();
+      base.setHours(0, 0, 0, 0);
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(base);
+        d.setDate(base.getDate() + i);
+        const ymd = formatDateYMD(d);
+        const dayName = d.getDay() === 0 ? 'Ahad' : d.toLocaleDateString('id-ID', { weekday: 'long' });
+        const shortDate = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        list.push({ ymd, dayName, shortDate, isFriday: d.getDay() === 5, isToday: i === 0 });
       }
-      if (dev.status === 'occupied' && dev.user) {
-        const legacyKey = `LEGACY_${dev.jampel || 'Sesi'}`;
-        if (!dev.bookings[legacyKey]) {
-          dev.bookings[legacyKey] = {
-            user: dev.user,
-            sessionName: dev.jampel || 'Terjadwal',
-            timeLabel: dev.jampel || '-',
-            date: getTodayDateString(),
-            dayLabel: formatIndoDateLabel(getTodayDateString())
-          };
-        }
-        dev.status = 'free';
-        delete dev.user;
+      return list;
+    }
+
+    function isFridayDate(ymd) { return parseYMDToDate(ymd).getDay() === 5; }
+    function isFridayToday() { return new Date().getDay() === 5; }
+
+    function enforceFridayRuleForSelectedDate() {
+      if (!selectedDateStr) selectedDateStr = getTodayDateString();
+      if (isFridayDate(selectedDateStr) && currentModeIsKbm) {
+        currentModeIsKbm = false;
+        selectedSlotKey = Object.keys(nonKbmFridaySchedules)[0] || 'Non-KBM 1';
       }
-      Object.entries(dev.bookings).forEach(([k, b]) => {
-        if (!b || typeof b !== 'object') return;
-        if (!b.date) {
-          const dateMatch = k.match(/^(\d{4}-\d{2}-\d{2})_/);
-          b.date = dateMatch ? dateMatch[1] : getTodayDateString();
-        }
-        if (!b.dayLabel) {
-          b.dayLabel = formatIndoDateLabel(b.date);
-        }
-        if (!b.sessionName) {
-          b.sessionName = k.split('_').pop() || 'Sesi';
+    }
+
+    function getActiveSchedulesMap() {
+      enforceFridayRuleForSelectedDate();
+      if (currentModeIsKbm) return kbmSchedules;
+      return isFridayDate(selectedDateStr) ? nonKbmFridaySchedules : nonKbmWeekdaySchedules;
+    }
+
+    function getFullSlotId(dateYmd, slotName) {
+      const dayType = isFridayDate(dateYmd) ? 'FRI' : 'REG';
+      return `${dateYmd}_${currentModeIsKbm ? 'KBM' : `NONKBM_${dayType}`}_${slotName}`;
+    }
+
+    function updateHeaderSwitches() {
+      const btnGadget = document.getElementById('quick-switch-gadget');
+      const btnPc = document.getElementById('quick-switch-pc');
+      if (btnGadget && btnPc) {
+        btnGadget.className = currentCategory === 'GADGET' ? 'px-3 py-1.5 rounded-lg text-xs font-extrabold bg-indigo-600 text-white transition' : 'px-3 py-1.5 rounded-lg text-xs font-extrabold text-slate-400 hover:text-white transition';
+        btnPc.className = currentCategory === 'PC' ? 'px-3 py-1.5 rounded-lg text-xs font-extrabold bg-emerald-600 text-white transition' : 'px-3 py-1.5 rounded-lg text-xs font-extrabold text-slate-400 hover:text-white transition';
+      }
+      const btnKbm = document.getElementById('quick-mode-kbm');
+      const btnNonKbm = document.getElementById('quick-mode-nonkbm');
+      const fridaySelected = isFridayDate(selectedDateStr);
+      if (btnKbm && btnNonKbm) {
+        btnKbm.className = fridaySelected ? 'px-3 py-1.5 rounded-lg text-xs font-extrabold text-rose-400/70 line-through cursor-not-allowed' : (currentModeIsKbm ? 'px-3 py-1.5 rounded-lg text-xs font-extrabold bg-blue-600 text-white transition' : 'px-3 py-1.5 rounded-lg text-xs font-extrabold text-slate-400 hover:text-white transition');
+        btnNonKbm.className = !currentModeIsKbm ? 'px-3 py-1.5 rounded-lg text-xs font-extrabold bg-violet-600 text-white transition' : 'px-3 py-1.5 rounded-lg text-xs font-extrabold text-slate-400 hover:text-white transition';
+      }
+      const titleEl = document.getElementById('service-title');
+      if (titleEl) {
+        titleEl.innerText = `Denah Perangkat - ${currentCategory === 'PC' ? 'PC' : 'Gadget'} ${currentModeIsKbm ? 'KBM' : 'Non-KBM'} (${formatIndoDateLabel(selectedDateStr)})`;
+      }
+    }
+
+    function switchCategoryDirect(cat) {
+      currentCategory = cat;
+      enforceFridayRuleForSelectedDate();
+      updateHeaderSwitches();
+      syncFromCloud();
+    }
+
+    function switchModeDirect(isKbm) {
+      if (isKbm && isFridayDate(selectedDateStr)) {
+        alert('Oops, there are no KBM today! (Tanggal yang dipilih adalah hari Jumat. Silakan pilih tanggal lain di kalender/tombol hari untuk booking KBM)');
+        return;
+      }
+      currentModeIsKbm = isKbm;
+      const activeMap = getActiveSchedulesMap();
+      selectedSlotKey = Object.keys(activeMap)[0] || 'Non-KBM 1';
+      updateHeaderSwitches();
+      renderSessionTabs();
+      populateScheduleDropdowns();
+      renderSeats();
+    }
+
+    function selectBookingDate(ymd) {
+      if (!ymd) return;
+      selectedDateStr = ymd;
+      enforceFridayRuleForSelectedDate();
+      const activeMap = getActiveSchedulesMap();
+      if (!Object.keys(activeMap).includes(selectedSlotKey)) selectedSlotKey = Object.keys(activeMap)[0] || 'Non-KBM 1';
+      renderWeekDaysSelector();
+      updateHeaderSwitches();
+      renderSessionTabs();
+      populateScheduleDropdowns();
+      renderSeats();
+    }
+
+    function onModalDateChange(ymd) {
+      if (!ymd) return;
+      if (currentModeIsKbm && isFridayDate(ymd)) {
+        alert('Oops, there are no KBM today! (Tanggal yang dipilih jatuh pada hari Jumat, otomatis dialihkan ke sesi Non-KBM)');
+      }
+      selectBookingDate(ymd);
+      document.getElementById('modal-booking-date-label').innerText = `📅 ${formatIndoDateLabel(selectedDateStr)}`;
+      document.getElementById('modal-mass-date-label').innerText = `📅 ${formatIndoDateLabel(selectedDateStr)}`;
+      if (selectedSeatId) updateModalExistingInfo(selectedSeatId);
+    }
+
+    function renderWeekDaysSelector() {
+      const container = document.getElementById('week-days-container');
+      const customPicker = document.getElementById('custom-booking-date');
+      const todayYmd = getTodayDateString();
+      if (customPicker) { customPicker.min = todayYmd; customPicker.value = selectedDateStr; }
+      if (!container) return;
+
+      container.innerHTML = getQuickWeekDays().map(d => {
+        const isSelected = d.ymd === selectedDateStr;
+        return `
+          <button type="button" onclick="selectBookingDate('${d.ymd}')" class="p-2.5 rounded-xl border text-left transition ${isSelected ? 'bg-emerald-600 border-emerald-400 text-white shadow-lg shadow-emerald-600/25' : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-emerald-500/50'}">
+            <div class="flex items-center justify-between gap-1">
+              <span class="font-extrabold text-xs">${d.dayName}</span>
+              ${d.isToday ? `<span class="px-1.5 py-0.2 rounded text-[9px] font-bold ${isSelected ? 'bg-white/20 text-white' : 'bg-indigo-500/20 text-indigo-300'}">Hari Ini</span>` : ''}
+            </div>
+            <div class="text-[11px] ${isSelected ? 'text-emerald-100' : 'text-slate-400'} mt-0.5">${d.shortDate}</div>
+            <div class="text-[9px] mt-1 font-semibold ${isSelected ? 'text-white/90' : d.isFriday ? 'text-amber-400' : 'text-slate-500'}">${d.isFriday ? 'Non-KBM Only' : 'KBM & Non-KBM'}</div>
+          </button>`;
+      }).join('');
+
+      const badge = document.getElementById('active-day-badge');
+      if (badge) badge.innerText = `📆 ${formatIndoDateLabel(selectedDateStr)}`;
+    }
+
+    function updateDateAndWeek() {
+      const now = new Date();
+      const dayName = now.getDay() === 0 ? 'Ahad' : now.toLocaleDateString('id-ID', { weekday: 'long' });
+      document.getElementById('live-date-display').innerText = `📅 ${dayName}, ${now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+      document.getElementById('live-week-display').innerText = `🗓️ Pekan ke-${Math.ceil(now.getDate() / 7)}`;
+
+      const friday = isFridayToday();
+      [
+        { desc: 'desc-gadget-kbm', action: 'action-gadget-kbm', defaultDesc: 'Laptop DELL & Chromebook saat jam KBM (07.00 - 14.00).', defaultAction: 'Buka Denah Gadget →', defaultColor: 'text-blue-400' },
+        { desc: 'desc-pc-kbm', action: 'action-pc-kbm', defaultDesc: 'Komputer PC Desktop saat jam KBM (07.00 - 14.00).', defaultAction: 'Buka Denah PC →', defaultColor: 'text-emerald-400' }
+      ].forEach(item => {
+        const descEl = document.getElementById(item.desc);
+        const actionEl = document.getElementById(item.action);
+        if (!descEl || !actionEl) return;
+        descEl.innerText = friday ? 'Hari ini Jumat (KBM tutup). Klik untuk booking KBM hari lain (Ahad–Kamis).' : item.defaultDesc;
+        actionEl.className = friday ? 'text-xs font-extrabold text-amber-400' : `text-xs font-bold ${item.defaultColor}`;
+        actionEl.innerText = friday ? 'Booking KBM Hari Lain →' : item.defaultAction;
+      });
+    }
+
+    function selectSessionSlot(slotName) {
+      selectedSlotKey = slotName;
+      renderSessionTabs();
+      populateScheduleDropdowns();
+      renderSeats();
+    }
+
+    function onModalSessionChange(slotName) {
+      selectedSlotKey = slotName;
+      renderSessionTabs();
+      renderSeats();
+    }
+
+    function renderSessionTabs() {
+      const container = document.getElementById('session-tabs-container');
+      if (!container) return;
+      const activeMap = getActiveSchedulesMap();
+      const keys = Object.keys(activeMap);
+      if (!keys.includes(selectedSlotKey) && keys.length > 0) selectedSlotKey = keys[0];
+
+      container.className = keys.length <= 2 ? 'grid grid-cols-1 sm:grid-cols-2 gap-2.5' : 'grid grid-cols-2 sm:grid-cols-4 gap-2.5';
+      container.innerHTML = keys.map(k => {
+        const s = activeMap[k];
+        const isActive = selectedSlotKey === k;
+        return `
+          <button type="button" onclick="selectSessionSlot('${k}')" class="p-3 rounded-xl border text-left transition ${isActive ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-600/25' : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-indigo-500/50'}">
+            <div class="font-extrabold text-xs">${k}</div>
+            <div class="text-[11px] ${isActive ? 'text-indigo-100' : 'text-slate-400'} mt-0.5">⏰ ${s.label}</div>
+          </button>`;
+      }).join('');
+
+      const activeSched = activeMap[selectedSlotKey];
+      const badge = document.getElementById('active-session-badge');
+      if (badge && activeSched) badge.innerText = `Aktif: ${selectedSlotKey} (${activeSched.label})`;
+      const massDesc = document.getElementById('mass-banner-desc');
+      if (massDesc && activeSched) {
+        massDesc.innerText = `Pinjam seluruh ${currentCategory === 'PC' ? 'unit PC' : 'unit Gadget'} kosong untuk ${formatIndoDateLabel(selectedDateStr)} sesi ${selectedSlotKey} (${activeSched.label}).`;
+      }
+    }
+
+    function populateScheduleDropdowns() {
+      const activeMap = getActiveSchedulesMap();
+      const opts = Object.keys(activeMap).map(k => `<option value="${k}" ${k === selectedSlotKey ? 'selected' : ''}>${k} (${activeMap[k].label})</option>`).join('');
+      document.getElementById('select-jampel').innerHTML = opts;
+      document.getElementById('select-mass-jampel').innerHTML = opts;
+      const lbl = currentModeIsKbm ? 'Pilih Sesi Jam KBM (07.00 - 14.00)' : 'Pilih Sesi Waktu Non-KBM (Jeda Sholat 15.00 - 16.00)';
+      document.getElementById('label-single-session').innerText = lbl;
+      document.getElementById('label-mass-session').innerText = lbl;
+    }
+
+    function getDefaultDevices(cat) {
+      const def = {};
+      if (cat === 'GADGET') {
+        for (let i = 1; i <= 6; i++) def[`LD-${String(i).padStart(2, '0')}`] = { id: `LD-${String(i).padStart(2, '0')}`, status: 'free', bookings: {}, alarmLocked: false };
+        for (let i = 1; i <= 6; i++) def[`CB-${String(i).padStart(2, '0')}`] = { id: `CB-${String(i).padStart(2, '0')}`, status: 'free', bookings: {}, alarmLocked: false };
+      } else {
+        for (let i = 1; i <= 26; i++) def[`PC-${String(i).padStart(2, '0')}`] = { id: `PC-${String(i).padStart(2, '0')}`, status: 'free', bookings: {}, alarmLocked: false };
+      }
+      return def;
+    }
+
+    async function syncFromCloud() {
+      if (isSaving) return;
+      if (!selectedDateStr) selectedDateStr = getTodayDateString();
+      enforceFridayRuleForSelectedDate();
+      updateHeaderSwitches();
+
+      const key = `labkom_devices_${currentCategory}`;
+      const { data: devRow, error } = await sb.from('labkom_store').select('payload').eq('id', key).maybeSingle();
+      if (!error && devRow && devRow.payload) {
+        devicesState = devRow.payload;
+      } else if (!error && !devRow) {
+        devicesState = getDefaultDevices(currentCategory);
+        await sb.from('labkom_store').upsert({ id: key, payload: devicesState });
+      } else {
+        devicesState = JSON.parse(localStorage.getItem(key) || 'null') || getDefaultDevices(currentCategory);
+      }
+
+      Object.keys(devicesState).forEach(id => {
+        if (!devicesState[id].bookings || typeof devicesState[id].bookings !== 'object') devicesState[id].bookings = {};
+      });
+      localStorage.setItem(key, JSON.stringify(devicesState));
+
+      const { data: schedRow } = await sb.from('labkom_store').select('payload').eq('id', 'labkom_schedules').maybeSingle();
+      if (schedRow && schedRow.payload) {
+        if (schedRow.payload.kbm) kbmSchedules = schedRow.payload.kbm;
+        if (schedRow.payload.nonKbmWeekday && Object.values(schedRow.payload.nonKbmWeekday).some(s => s.label.includes('14:00'))) nonKbmWeekdaySchedules = schedRow.payload.nonKbmWeekday;
+        if (schedRow.payload.nonKbmFriday && Object.values(schedRow.payload.nonKbmFriday).some(s => s.label.includes('14:00'))) nonKbmFridaySchedules = schedRow.payload.nonKbmFriday;
+      }
+
+      renderWeekDaysSelector();
+      renderSessionTabs();
+      populateScheduleDropdowns();
+      renderSeats();
+      checkCurrentDeviceLock();
+    }
+
+    async function saveData() {
+      isSaving = true;
+      const key = `labkom_devices_${currentCategory}`;
+      localStorage.setItem(key, JSON.stringify(devicesState));
+      renderSeats();
+      checkCurrentDeviceLock();
+      await sb.from('labkom_store').upsert({ id: key, payload: devicesState, updated_at: new Date().toISOString() });
+      isSaving = false;
+    }
+
+    async function initData() {
+      selectedDateStr = getTodayDateString();
+      updateDateAndWeek();
+      enforceFridayRuleForSelectedDate();
+      updateHeaderSwitches();
+      const urlParams = new URLSearchParams(window.location.search);
+      currentDeviceId = urlParams.get('device');
+      if (currentDeviceId) {
+        document.getElementById('device-indicator').innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Perangkat: <strong class="text-emerald-400">${currentDeviceId}</strong>`;
+        currentCategory = currentDeviceId.startsWith('PC') ? 'PC' : 'GADGET';
+        currentModeIsKbm = !isFridayDate(selectedDateStr);
+        updateHeaderSwitches();
+        switchView('grid');
+      }
+      await syncFromCloud();
+    }
+
+    function openService(serviceName, category, isKbm) {
+      selectedDateStr = (isKbm && isFridayToday()) ? getNextNonFridayDateString() : getTodayDateString();
+      currentCategory = category;
+      currentModeIsKbm = isKbm;
+      enforceFridayRuleForSelectedDate();
+      updateHeaderSwitches();
+      selectedSlotKey = Object.keys(getActiveSchedulesMap())[0] || 'Non-KBM 1';
+      syncFromCloud();
+      switchView('grid');
+    }
+
+    function renderSeats() {
+      const container = document.getElementById('seats-container');
+      if (!container) return;
+      container.innerHTML = '';
+      const fullSlotId = getFullSlotId(selectedDateStr, selectedSlotKey);
+
+      Object.values(devicesState).forEach(dev => {
+        const seat = document.createElement('div');
+        const isMaintenance = dev.status === 'maintenance';
+        const allSelectedDaySlots = dev.bookings ? Object.values(dev.bookings).filter(b => b && b.date === selectedDateStr) : [];
+        const slotBooking = (dev.bookings && dev.bookings[fullSlotId]) ? dev.bookings[fullSlotId] : null;
+        const isOccupied = !isMaintenance && Boolean(slotBooking);
+        const isCurrent = currentDeviceId === dev.id;
+        const icon = dev.id.startsWith('LD') ? '💻' : dev.id.startsWith('CB') ? '📱' : '🖥️';
+
+        seat.className = `seat relative p-4 rounded-2xl border flex flex-col items-center justify-between select-none text-center min-h-[120px] ${
+          isOccupied ? 'bg-rose-950/50 border-rose-500/60 text-rose-100 occupied' :
+          isMaintenance ? 'bg-amber-950/40 border-amber-500/60 text-amber-200 cursor-not-allowed maintenance' :
+          'bg-slate-900/70 border-slate-800 text-slate-200 hover:border-indigo-500 cursor-pointer'
+        } ${isCurrent ? 'ring-2 ring-emerald-400' : ''}`;
+
+        seat.onclick = () => { if (!isMaintenance) isOccupied ? openDeviceScheduleModal(dev.id) : openBookingModal(dev.id); };
+
+        const countBadge = allSelectedDaySlots.length > 0
+          ? `<button type="button" onclick="event.stopPropagation(); openDeviceScheduleModal('${dev.id}')" class="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-indigo-500/30 hover:bg-indigo-500/50 border border-indigo-400/40 text-[9px] font-extrabold text-indigo-200">${allSelectedDaySlots.length} Sesi ℹ️</button>`
+          : '';
+
+        seat.innerHTML = `
+          ${countBadge}
+          <div class="text-2xl mt-1">${isMaintenance ? '🛠️' : icon}</div>
+          <div>
+            <div class="font-extrabold text-xs">${dev.id}</div>
+            <div class="text-[10px] opacity-80 truncate max-w-[85px] mt-0.5">${isOccupied ? slotBooking.user : isMaintenance ? 'Rusak' : 'Tersedia'}</div>
+          </div>
+          ${isOccupied ? `<span class="px-2 py-0.5 bg-rose-500/20 text-rose-300 rounded text-[9px] font-bold">${slotBooking.sessionName}</span>` : isMaintenance ? `<span class="px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded text-[9px] font-bold">Terkunci</span>` : '<span class="text-[9px] text-emerald-400 font-semibold">Ready</span>'}
+        `;
+        container.appendChild(seat);
+      });
+    }
+
+    function openDeviceScheduleModal(devId) {
+      const dev = devicesState[devId];
+      if (!dev) return;
+      const entries = dev.bookings ? Object.values(dev.bookings).filter(b => b && b.date === selectedDateStr) : [];
+      document.getElementById('detail-modal-title').innerText = `📋 Jadwal Unit ${devId}`;
+      document.getElementById('detail-modal-subtitle').innerText = `${formatIndoDateLabel(selectedDateStr)} — ${entries.length} sesi terbooking`;
+      document.getElementById('detail-modal-body').innerHTML = entries.length === 0
+        ? `<div class="p-4 rounded-2xl bg-slate-900/70 border border-slate-800 text-center text-slate-400">Semua sesi masih kosong (Ready) pada tanggal ini.</div>`
+        : entries.map(b => `<div class="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 flex justify-between items-center gap-3"><div><span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-extrabold text-[11px]">${b.sessionName}</span><span class="text-slate-400 ml-1.5">(${b.timeLabel || '-'})</span><div class="font-bold text-white text-sm mt-1">👤 ${b.user}</div></div><span class="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-300 font-bold text-[10px]">Terisi</span></div>`).join('');
+      document.getElementById('schedule-detail-modal').classList.remove('hidden');
+    }
+
+    function openAllScheduleModal() {
+      let rowsHtml = '', totalBooked = 0;
+      Object.values(devicesState).forEach(dev => {
+        const entries = dev.bookings ? Object.values(dev.bookings).filter(b => b && b.date === selectedDateStr) : [];
+        if (entries.length > 0) {
+          totalBooked += entries.length;
+          rowsHtml += `<div class="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2"><div class="flex justify-between items-center"><span class="font-extrabold text-white text-sm">🖥️ ${dev.id}</span><span class="text-[11px] text-indigo-300 font-bold">${entries.length} Sesi Terbooking</span></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${entries.map(b => `<div class="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800"><div><div class="text-[11px] font-extrabold text-indigo-400">${b.sessionName} <span class="text-slate-500 font-normal">(${b.timeLabel || ''})</span></div><div class="text-xs font-semibold text-slate-200 mt-0.5">👤 ${b.user}</div></div></div>`).join('')}</div></div>`;
         }
       });
-      return dev;
+      document.getElementById('detail-modal-title').innerText = `📅 Rekap Booking ${currentCategory}`;
+      document.getElementById('detail-modal-subtitle').innerText = `${formatIndoDateLabel(selectedDateStr)} — Total ${totalBooked} sesi terbooking`;
+      document.getElementById('detail-modal-body').innerHTML = rowsHtml || `<div class="p-6 rounded-2xl bg-slate-900/70 border border-slate-800 text-center text-slate-400">Belum ada booking pada ${formatIndoDateLabel(selectedDateStr)}.</div>`;
+      document.getElementById('schedule-detail-modal').classList.remove('hidden');
     }
 
-    function checkAdminLogin() {
-      const pin = document.getElementById('admin-pin-input').value.trim();
-      if (pin === MASTER_PIN) {
-        isAuthenticated = true;
-        document.getElementById('admin-pin-input').value = '';
-        document.getElementById('admin-login-error').classList.add('hidden');
-        document.getElementById('admin-login-overlay').classList.add('hidden');
-        document.getElementById('admin-main-content').classList.remove('hidden');
-        initAdmin();
+    function closeDetailModal() { document.getElementById('schedule-detail-modal').classList.add('hidden'); }
+
+    function switchView(view) {
+      if (view !== 'menu') {
+        enforceFridayRuleForSelectedDate();
+        updateHeaderSwitches();
+        renderWeekDaysSelector();
+        renderSessionTabs();
+        populateScheduleDropdowns();
+        renderSeats();
+      }
+      document.getElementById('view-menu').classList.toggle('hidden', view !== 'menu');
+      document.getElementById('view-grid').classList.toggle('hidden', view === 'menu');
+      document.getElementById('btn-nav-menu').className = view === 'menu' ? 'px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 text-white' : 'px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white';
+      document.getElementById('btn-nav-grid').className = view !== 'menu' ? 'px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 text-white' : 'px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white';
+    }
+
+    function updateModalExistingInfo(id) {
+      const dev = devicesState[id];
+      const existing = dev && dev.bookings ? Object.values(dev.bookings).filter(b => b && b.date === selectedDateStr) : [];
+      const infoBox = document.getElementById('modal-seat-existing-info');
+      if (existing.length > 0) {
+        infoBox.classList.remove('hidden');
+        infoBox.innerHTML = `<div class="font-bold text-amber-300">ℹ️ Sudah terbooking di sesi lain pada tanggal ini:</div>` + existing.map(b => `<div class="text-slate-300">• <strong>${b.sessionName}</strong> (${b.timeLabel || ''}): ${b.user}</div>`).join('');
+      } else { infoBox.classList.add('hidden'); }
+    }
+
+    function openBookingModal(id) {
+      selectedSeatId = id;
+      document.getElementById('modal-seat-id').innerText = id;
+      const modalPicker = document.getElementById('modal-date-picker');
+      modalPicker.min = getTodayDateString();
+      modalPicker.value = selectedDateStr;
+      document.getElementById('modal-booking-date-label').innerText = `📅 ${formatIndoDateLabel(selectedDateStr)}`;
+      document.getElementById('input-student-name').value = '';
+      populateScheduleDropdowns();
+      updateModalExistingInfo(id);
+      document.getElementById('booking-modal').classList.remove('hidden');
+    }
+
+    function closeModal() { document.getElementById('booking-modal').classList.add('hidden'); }
+
+    async function confirmBooking() {
+      const name = document.getElementById('input-student-name').value.trim();
+      const slotName = document.getElementById('select-jampel').value;
+      if (!name) return alert('Harap isi nama peminjam!');
+      const sched = getActiveSchedulesMap()[slotName] || { label: '' };
+      const fullSlotId = getFullSlotId(selectedDateStr, slotName);
+      const dev = devicesState[selectedSeatId];
+      if (!dev.bookings) dev.bookings = {};
+      if (dev.bookings[fullSlotId]) return alert(`Maaf, ${selectedSeatId} pada ${formatIndoDateLabel(selectedDateStr)} (${slotName}) sudah dibooking oleh ${dev.bookings[fullSlotId].user}!`);
+      dev.bookings[fullSlotId] = { user: name, sessionName: slotName, timeLabel: sched.label, date: selectedDateStr, dayLabel: formatIndoDateLabel(selectedDateStr) };
+      selectedSlotKey = slotName;
+      renderSessionTabs();
+      await saveData();
+      closeModal();
+    }
+
+    function openMassBookingModal() {
+      document.getElementById('input-mass-name').value = '';
+      document.getElementById('mass-cat-label').innerText = currentCategory === 'PC' ? 'Semua PC' : 'Semua Gadget';
+      const modalMassPicker = document.getElementById('modal-mass-date-picker');
+      modalMassPicker.min = getTodayDateString();
+      modalMassPicker.value = selectedDateStr;
+      document.getElementById('modal-mass-date-label').innerText = `📅 ${formatIndoDateLabel(selectedDateStr)}`;
+      populateScheduleDropdowns();
+      document.getElementById('mass-booking-modal').classList.remove('hidden');
+    }
+
+    function closeMassModal() { document.getElementById('mass-booking-modal').classList.add('hidden'); }
+
+    async function confirmMassBooking() {
+      const name = document.getElementById('input-mass-name').value.trim();
+      const slotName = document.getElementById('select-mass-jampel').value;
+      if (!name) return alert('Harap isi nama kelas/kegiatan!');
+      const sched = getActiveSchedulesMap()[slotName] || { label: '' };
+      const fullSlotId = getFullSlotId(selectedDateStr, slotName);
+      let count = 0;
+      Object.keys(devicesState).forEach(id => {
+        const dev = devicesState[id];
+        if (!dev.bookings) dev.bookings = {};
+        if (dev.status !== 'maintenance' && !dev.bookings[fullSlotId]) {
+          dev.bookings[fullSlotId] = { user: name, sessionName: slotName, timeLabel: sched.label, date: selectedDateStr, dayLabel: formatIndoDateLabel(selectedDateStr) };
+          count++;
+        }
+      });
+      if (count === 0) return alert('Semua unit pada hari dan sesi ini sudah terisi atau rusak.');
+      selectedSlotKey = slotName;
+      renderSessionTabs();
+      await saveData();
+      closeMassModal();
+    }
+
+    function playBeep() {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        osc.type = 'square'; osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        osc.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+      } catch(e) {}
+    }
+
+    function checkCurrentDeviceLock() {
+      if (!currentDeviceId || !devicesState[currentDeviceId]) return;
+      const lockOverlay = document.getElementById('lock-screen');
+      document.getElementById('lock-device-id').innerText = currentDeviceId;
+      if (devicesState[currentDeviceId].alarmLocked) {
+        lockOverlay.classList.remove('hidden'); document.body.classList.add('lock-screen-active'); playBeep();
       } else {
-        document.getElementById('admin-login-error').classList.remove('hidden');
+        lockOverlay.classList.add('hidden'); document.body.classList.remove('lock-screen-active');
       }
     }
 
-    function logoutAdmin() {
-      isAuthenticated = false;
-      if (syncIntervalId) clearInterval(syncIntervalId);
-      document
+    async function attemptUnlock() {
+      if (document.getElementById('unlock-pin').value === MASTER_PIN) {
+        document.getElementById('lock-error').classList.add('hidden');
+        document.getElementById('unlock-pin').value = '';
+        devicesState[currentDeviceId] = { ...devicesState[currentDeviceId], alarmLocked: false };
+        await saveData();
+      } else { document.getElementById('lock-error').classList.remove('hidden'); }
+    }
+
+    setInterval(() => { updateDateAndWeek(); syncFromCloud(); }, 4000);
+    initData();
+  </script>
+</body>
+</html>
