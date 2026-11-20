@@ -208,16 +208,16 @@
   <footer class="py-4 text-center text-xs text-slate-500 border-t border-slate-900">© Labkom Al-Umanaa System.</footer>
 
   <script>
-    // URL SUDAH DIISI OTOMATIS. TINGGAL TEMPEL PUBLISHABLE KEY DI BAWAH INI:
     const SUPABASE_URL = 'https://wuvdwtwfeomvuoojsxsz.supabase.co';
-   const SUPABASE_KEY = 'sb_publishable_Sh5plKFsXEQbnTaTrPDh4A_96MlfVRa';
-    const sb = (SUPABASE_KEY && !SUPABASE_KEY.startsWith('TEMPEL')) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1dmR3dHdmZW9tdnVvb2pzeHN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUxMTQyODIsImV4cCI6MjExMDY5MDI4Mn0.CfnILeWqzFocK1wy_L30XoC65-VVpe692oGVrNzSyvU';
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const MASTER_PIN = "1234";
     let currentDeviceId = null;
     let currentCategory = 'GADGET';
     let currentModeIsKbm = true;
     let selectedSeatId = null;
+    let isSaving = false;
     let devicesState = {};
     let schedulesState = {
       'KBM-1': { label: '07:00 - 08:20', minutes: 80 },
@@ -286,24 +286,22 @@
     }
 
     async function syncFromCloud() {
+      if (isSaving) return;
       const key = `labkom_devices_${currentCategory}`;
-      if (sb) {
-        const { data: devRow } = await sb.from('labkom_store').select('payload').eq('id', key).maybeSingle();
-        if (devRow && devRow.payload) {
-          devicesState = devRow.payload;
-          localStorage.setItem(key, JSON.stringify(devicesState));
-        } else {
-          devicesState = getDefaultDevices(currentCategory);
-          await sb.from('labkom_store').upsert({ id: key, payload: devicesState });
-        }
-
-        const { data: schedRow } = await sb.from('labkom_store').select('payload').eq('id', 'labkom_schedules').maybeSingle();
-        if (schedRow && schedRow.payload) {
-          schedulesState = schedRow.payload;
-        }
+      const { data: devRow, error } = await sb.from('labkom_store').select('payload').eq('id', key).maybeSingle();
+      if (!error && devRow && devRow.payload) {
+        devicesState = devRow.payload;
+        localStorage.setItem(key, JSON.stringify(devicesState));
+      } else if (!error && !devRow) {
+        devicesState = getDefaultDevices(currentCategory);
+        await sb.from('labkom_store').upsert({ id: key, payload: devicesState });
       } else {
         devicesState = JSON.parse(localStorage.getItem(key) || 'null') || getDefaultDevices(currentCategory);
-        schedulesState = JSON.parse(localStorage.getItem('labkom_schedules') || 'null') || schedulesState;
+      }
+
+      const { data: schedRow } = await sb.from('labkom_store').select('payload').eq('id', 'labkom_schedules').maybeSingle();
+      if (schedRow && schedRow.payload) {
+        schedulesState = schedRow.payload;
       }
 
       populateScheduleDropdowns();
@@ -312,13 +310,14 @@
     }
 
     async function saveData() {
+      isSaving = true;
       const key = `labkom_devices_${currentCategory}`;
       localStorage.setItem(key, JSON.stringify(devicesState));
       renderSeats();
       checkCurrentDeviceLock();
-      if (sb) {
-        await sb.from('labkom_store').upsert({ id: key, payload: devicesState, updated_at: new Date().toISOString() });
-      }
+      const { error } = await sb.from('labkom_store').upsert({ id: key, payload: devicesState, updated_at: new Date().toISOString() });
+      if (error) console.error('Supabase Save Error:', error);
+      isSaving = false;
     }
 
     async function initData() {
