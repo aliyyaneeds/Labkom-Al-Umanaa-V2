@@ -28,7 +28,7 @@
         <div>
           <h1 class="font-extrabold text-lg leading-tight text-white">Labkom Al-Umanaa</h1>
           <p id="device-indicator" class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Live Sync Aktif
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Live Sync & Auto-Reset Aktif
           </p>
         </div>
       </div>
@@ -40,13 +40,13 @@
     </div>
   </header>
 
-  <!-- Lock Screen Alarm Overlay -->
+  <!-- Lock Screen Alarm Overlay (Hanya untuk Alarm Manual Admin) -->
   <div id="lock-screen" class="hidden fixed inset-0 z-50 flex flex-col items-center justify-center p-6 text-center text-white backdrop-blur-xl">
     <div class="glass-card border-2 border-red-500 rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-4">
       <div class="w-20 h-20 bg-red-500/20 rounded-2xl flex items-center justify-center text-4xl mx-auto animate-bounce">🚨</div>
       <div>
-        <h2 class="text-2xl font-black text-red-400">WAKTU PEMINJAMAN HABIS!</h2>
-        <p class="text-slate-300 text-xs mt-1">Perangkat <span id="lock-device-id" class="font-bold text-amber-400">LD-XX</span> telah melewati batas sesi waktu.</p>
+        <h2 class="text-2xl font-black text-red-400">PERANGKAT DIKUNCI ADMIN!</h2>
+        <p class="text-slate-300 text-xs mt-1">Perangkat <span id="lock-device-id" class="font-bold text-amber-400">LD-XX</span> sedang dikunci oleh pengawas Labkom.</p>
       </div>
       <div class="space-y-3 pt-2">
         <input type="password" id="unlock-pin" placeholder="Masukkan Master PIN Admin" class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-center font-bold tracking-widest text-lg text-white">
@@ -132,7 +132,7 @@
       <div class="bg-gradient-to-r from-indigo-900/60 to-violet-900/60 border border-indigo-500/40 rounded-2xl p-4 flex flex-wrap justify-between items-center gap-4 shadow-lg">
         <div>
           <h3 class="text-sm font-extrabold text-white flex items-center gap-2">⚡ Booking Massal Satu Kelas / Kegiatan</h3>
-          <p class="text-xs text-indigo-200 mt-0.5">Pinjam seluruh unit yang tersedia sekaligus sesuai sesi waktu yang dipilih.</p>
+          <p class="text-xs text-indigo-200 mt-0.5">Unit otomatis kembali Ready begitu jam sesi berakhir.</p>
         </div>
         <button type="button" onclick="openMassBookingModal()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-extrabold shadow-md shadow-indigo-600/30 transition">
           ⚡ Booking Semua Unit Sekarang
@@ -231,6 +231,35 @@
       return new Date().getDay() === 5;
     }
 
+    // Menghitung timestamp tepat saat jam sesi selesai (misal "07:00 - 08:20" -> hari ini jam 08:20)
+    function computeSessionEndTimestamp(timeRangeLabel, fallbackMinutes) {
+      const now = new Date();
+      const match = String(timeRangeLabel || '').match(/(\d{1,2})[:.](\d{2})\s*$/);
+      if (match) {
+        const endHour = parseInt(match[1], 10);
+        const endMinute = parseInt(match[2], 10);
+        const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endHour, endMinute, 0, 0);
+        if (target.getTime() > now.getTime()) {
+          return target.getTime();
+        }
+      }
+      return Date.now() + (fallbackMinutes || 80) * 60 * 1000;
+    }
+
+    // Otomatis kembalikan unit yang waktunya sudah lewat ke status 'free' (kecuali yang dikunci alarm admin)
+    function autoExpireEndedSessions(stateObj) {
+      let changed = false;
+      const now = Date.now();
+      Object.keys(stateObj).forEach(id => {
+        const dev = stateObj[id];
+        if (dev && dev.status === 'occupied' && !dev.alarmLocked && dev.endTime && now >= dev.endTime) {
+          stateObj[id] = { ...dev, status: 'free', user: '', jampel: '', endTime: null, alarmLocked: false };
+          changed = true;
+        }
+      });
+      return changed;
+    }
+
     function updateDateAndWeek() {
       const now = new Date();
       const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -264,8 +293,8 @@
       const keys = Object.keys(schedulesState);
       const opts = keys.map((k, idx) => {
         const s = schedulesState[k];
-        const sessionTag = currentModeIsKbm ? k : `Sesi Non-KBM ${idx + 1}`;
-        return `<option value="${sessionTag}" data-min="${s.minutes}">${sessionTag} (${s.label})</option>`;
+        const sessionTag = currentModeIsKbm ? k : `Non-KBM ${idx + 1}`;
+        return `<option value="${sessionTag}" data-label="${s.label}" data-min="${s.minutes}">${sessionTag} (${s.label})</option>`;
       }).join('');
 
       document.getElementById('select-jampel').innerHTML = opts;
@@ -277,10 +306,10 @@
     function getDefaultDevices(cat) {
       const def = {};
       if (cat === 'GADGET') {
-        for (let i = 1; i <= 6; i++) def[`LD-${String(i).padStart(2, '0')}`] = { id: `LD-${String(i).padStart(2, '0')}`, status: 'free', user: '', jampel: '', endTime: null };
-        for (let i = 1; i <= 6; i++) def[`CB-${String(i).padStart(2, '0')}`] = { id: `CB-${String(i).padStart(2, '0')}`, status: 'free', user: '', jampel: '', endTime: null };
+        for (let i = 1; i <= 6; i++) def[`LD-${String(i).padStart(2, '0')}`] = { id: `LD-${String(i).padStart(2, '0')}`, status: 'free', user: '', jampel: '', endTime: null, alarmLocked: false };
+        for (let i = 1; i <= 6; i++) def[`CB-${String(i).padStart(2, '0')}`] = { id: `CB-${String(i).padStart(2, '0')}`, status: 'free', user: '', jampel: '', endTime: null, alarmLocked: false };
       } else {
-        for (let i = 1; i <= 26; i++) def[`PC-${String(i).padStart(2, '0')}`] = { id: `PC-${String(i).padStart(2, '0')}`, status: 'free', user: '', jampel: '', endTime: null };
+        for (let i = 1; i <= 26; i++) def[`PC-${String(i).padStart(2, '0')}`] = { id: `PC-${String(i).padStart(2, '0')}`, status: 'free', user: '', jampel: '', endTime: null, alarmLocked: false };
       }
       return def;
     }
@@ -291,12 +320,18 @@
       const { data: devRow, error } = await sb.from('labkom_store').select('payload').eq('id', key).maybeSingle();
       if (!error && devRow && devRow.payload) {
         devicesState = devRow.payload;
-        localStorage.setItem(key, JSON.stringify(devicesState));
       } else if (!error && !devRow) {
         devicesState = getDefaultDevices(currentCategory);
         await sb.from('labkom_store').upsert({ id: key, payload: devicesState });
       } else {
         devicesState = JSON.parse(localStorage.getItem(key) || 'null') || getDefaultDevices(currentCategory);
+      }
+
+      // Cek & reset otomatis unit yang sesinya sudah lewat
+      const hasAutoReset = autoExpireEndedSessions(devicesState);
+      localStorage.setItem(key, JSON.stringify(devicesState));
+      if (hasAutoReset) {
+        await sb.from('labkom_store').upsert({ id: key, payload: devicesState, updated_at: new Date().toISOString() });
       }
 
       const { data: schedRow } = await sb.from('labkom_store').select('payload').eq('id', 'labkom_schedules').maybeSingle();
@@ -397,11 +432,14 @@
     async function confirmBooking() {
       const name = document.getElementById('input-student-name').value.trim();
       const sel = document.getElementById('select-jampel');
+      const opt = sel.options[sel.selectedIndex];
       const sessionLabel = sel.value;
-      const mins = parseInt(sel.options[sel.selectedIndex].getAttribute('data-min')) || 80;
+      const timeRange = opt.getAttribute('data-label');
+      const mins = parseInt(opt.getAttribute('data-min')) || 80;
       if (!name) return alert('Harap isi nama peminjam!');
 
-      devicesState[selectedSeatId] = { ...devicesState[selectedSeatId], status: 'occupied', user: name, jampel: sessionLabel, endTime: Date.now() + mins * 60 * 1000 };
+      const endTime = computeSessionEndTimestamp(timeRange, mins);
+      devicesState[selectedSeatId] = { ...devicesState[selectedSeatId], status: 'occupied', user: name, jampel: `${sessionLabel} (${timeRange})`, endTime, alarmLocked: false };
       await saveData();
       closeModal();
     }
@@ -418,15 +456,17 @@
     async function confirmMassBooking() {
       const name = document.getElementById('input-mass-name').value.trim();
       const sel = document.getElementById('select-mass-jampel');
+      const opt = sel.options[sel.selectedIndex];
       const sessionLabel = sel.value;
-      const mins = parseInt(sel.options[sel.selectedIndex].getAttribute('data-min')) || 80;
+      const timeRange = opt.getAttribute('data-label');
+      const mins = parseInt(opt.getAttribute('data-min')) || 80;
       if (!name) return alert('Harap isi nama kelas/kegiatan!');
 
-      const endTime = Date.now() + mins * 60 * 1000;
+      const endTime = computeSessionEndTimestamp(timeRange, mins);
       let count = 0;
       Object.keys(devicesState).forEach(id => {
         if (devicesState[id].status === 'free') {
-          devicesState[id] = { ...devicesState[id], status: 'occupied', user: name, jampel: sessionLabel, endTime };
+          devicesState[id] = { ...devicesState[id], status: 'occupied', user: name, jampel: `${sessionLabel} (${timeRange})`, endTime, alarmLocked: false };
           count++;
         }
       });
@@ -448,6 +488,7 @@
       } catch(e) {}
     }
 
+    // Lock screen hanya muncul jika dikunci khusus oleh Alarm Admin (alarmLocked === true)
     function checkCurrentDeviceLock() {
       if (!currentDeviceId) return;
       const dev = devicesState[currentDeviceId];
@@ -456,7 +497,7 @@
       const lockOverlay = document.getElementById('lock-screen');
       document.getElementById('lock-device-id').innerText = currentDeviceId;
 
-      if (dev.status === 'occupied' && dev.endTime && Date.now() >= dev.endTime) {
+      if (dev.alarmLocked) {
         lockOverlay.classList.remove('hidden');
         document.body.classList.add('lock-screen-active');
         playBeep();
@@ -470,7 +511,7 @@
       if (document.getElementById('unlock-pin').value === MASTER_PIN) {
         document.getElementById('lock-error').classList.add('hidden');
         document.getElementById('unlock-pin').value = '';
-        devicesState[currentDeviceId] = { ...devicesState[currentDeviceId], status: 'free', user: '', jampel: '', endTime: null };
+        devicesState[currentDeviceId] = { ...devicesState[currentDeviceId], status: 'free', user: '', jampel: '', endTime: null, alarmLocked: false };
         await saveData();
       } else {
         document.getElementById('lock-error').classList.remove('hidden');
