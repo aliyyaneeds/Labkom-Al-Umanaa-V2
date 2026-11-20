@@ -28,8 +28,8 @@
         <div class="w-10 h-10 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-xl flex items-center justify-center font-black text-xl">🖥️</div>
         <div>
           <h1 class="font-extrabold text-lg leading-tight text-white">Labkom Al-Umanaa</h1>
-          <p id="device-indicator" class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Booking Jauh-Jauh Hari & Per Sesi (07.00 - 17.00)
+          <p id="cloud-status-bar" class="text-xs text-amber-400 flex items-center gap-1.5 mt-0.5">
+            <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Menghubungkan ke Cloud...
           </p>
         </div>
       </div>
@@ -40,6 +40,14 @@
       </div>
     </div>
   </header>
+
+  <!-- Banner Error Cloud jika Supabase menolak koneksi -->
+  <div id="cloud-error-box" class="hidden max-w-7xl mx-auto px-4 pt-4 w-full">
+    <div class="bg-rose-950/90 border border-rose-500 rounded-2xl p-3.5 text-xs text-rose-200 flex flex-wrap justify-between items-center gap-2">
+      <span id="cloud-error-text">⚠️ Gagal terhubung ke Supabase. Data belum tersinkron ke device lain.</span>
+      <button type="button" onclick="syncFromCloud(true)" class="px-3 py-1 bg-rose-600 text-white rounded-lg font-bold">Coba Lagi</button>
+    </div>
+  </div>
 
   <!-- Lock Screen Alarm Overlay -->
   <div id="lock-screen" class="hidden fixed inset-0 z-50 flex flex-col items-center justify-center p-6 text-center text-white backdrop-blur-xl">
@@ -64,13 +72,11 @@
     <div id="view-menu" class="space-y-8 py-4">
       <div class="text-center space-y-3">
         <h2 class="text-3xl font-black text-white">Labkom Main Menu</h2>
-        
         <div class="inline-flex flex-wrap items-center justify-center gap-3 px-5 py-2.5 rounded-2xl bg-slate-900/90 border border-indigo-500/30 shadow-lg">
           <span id="live-date-display" class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">📅 Memuat...</span>
           <span class="text-slate-700">|</span>
           <span id="live-week-display" class="px-3 py-1 rounded-full bg-indigo-600/30 border border-indigo-500/50 text-indigo-300 text-xs font-extrabold tracking-wide">🗓️ Pekan ke-...</span>
         </div>
-
         <p class="text-xs text-slate-400">Bisa pilih tanggal untuk <strong>booking jauh-jauh hari</strong> di dalam denah. <strong>KBM (07.00 – 14.00, tutup tiap Jumat)</strong> • <strong>Non-KBM (s.d. 17.00, jeda sholat 15.00–16.00)</strong>.</p>
       </div>
 
@@ -291,6 +297,7 @@
     let selectedSlotKey = 'KBM-1';
     let selectedSeatId = null;
     let isSaving = false;
+    let hasPushedLocalOnce = { GADGET: false, PC: false };
     let devicesState = {};
 
     const DEFAULT_KBM_SCHEDULES = {
@@ -299,12 +306,10 @@
       'KBM-3': { label: '10:00 - 11:20', minutes: 80 },
       'KBM-4': { label: '12:40 - 14:00', minutes: 80 }
     };
-
     const DEFAULT_NONKBM_WEEKDAY = {
       'Non-KBM 1': { label: '14:00 - 15:00', minutes: 60 },
       'Non-KBM 2': { label: '16:00 - 17:00', minutes: 60 }
     };
-
     const DEFAULT_NONKBM_FRIDAY = {
       'Non-KBM 1': { label: '07:30 - 09:30', minutes: 120 },
       'Non-KBM 2': { label: '09:30 - 11:30', minutes: 120 },
@@ -317,42 +322,45 @@
     let nonKbmFridaySchedules = { ...DEFAULT_NONKBM_FRIDAY };
     let audioCtx = null;
 
-    function formatDateYMD(dateObj) {
-      return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+    function setCloudStatus(ok, msg) {
+      const bar = document.getElementById('cloud-status-bar');
+      const box = document.getElementById('cloud-error-box');
+      const errText = document.getElementById('cloud-error-text');
+      if (ok) {
+        if (bar) bar.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> <span class="text-emerald-400 font-semibold">Cloud Terhubung • ${msg || 'Sinkron'}</span>`;
+        if (box) box.classList.add('hidden');
+      } else {
+        if (bar) bar.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400 font-bold">Cloud Gagal Sync (Mode Lokal)</span>`;
+        if (box && errText) {
+          errText.innerText = `⚠️ Error Supabase: ${msg}`;
+          box.classList.remove('hidden');
+        }
+      }
     }
 
-    function parseYMDToDate(ymd) {
-      const [y, m, d] = ymd.split('-').map(Number);
-      return new Date(y, m - 1, d);
-    }
-
+    function formatDateYMD(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+    function parseYMDToDate(ymd) { const [y, m, d] = ymd.split('-').map(Number); return new Date(y, m - 1, d); }
     function formatIndoDateLabel(ymd) {
       if (!ymd) return '-';
       const d = parseYMDToDate(ymd);
       const dayName = d.getDay() === 0 ? 'Ahad' : d.toLocaleDateString('id-ID', { weekday: 'long' });
-      const rest = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-      return `${dayName}, ${rest}`;
+      return `${dayName}, ${d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
     }
-
     function getTodayDateString() { return formatDateYMD(new Date()); }
-
-    function getNextNonFridayDateString() {
-      const d = new Date();
-      while (d.getDay() === 5) d.setDate(d.getDate() + 1);
-      return formatDateYMD(d);
-    }
+    function getNextNonFridayDateString() { const d = new Date(); while (d.getDay() === 5) d.setDate(d.getDate() + 1); return formatDateYMD(d); }
 
     function getQuickWeekDays() {
-      const list = [];
-      const base = new Date();
+      const list = [], base = new Date();
       base.setHours(0, 0, 0, 0);
       for (let i = 0; i < 7; i++) {
-        const d = new Date(base);
-        d.setDate(base.getDate() + i);
-        const ymd = formatDateYMD(d);
-        const dayName = d.getDay() === 0 ? 'Ahad' : d.toLocaleDateString('id-ID', { weekday: 'long' });
-        const shortDate = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-        list.push({ ymd, dayName, shortDate, isFriday: d.getDay() === 5, isToday: i === 0 });
+        const d = new Date(base); d.setDate(base.getDate() + i);
+        list.push({
+          ymd: formatDateYMD(d),
+          dayName: d.getDay() === 0 ? 'Ahad' : d.toLocaleDateString('id-ID', { weekday: 'long' }),
+          shortDate: d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+          isFriday: d.getDay() === 5,
+          isToday: i === 0
+        });
       }
       return list;
     }
@@ -375,8 +383,7 @@
     }
 
     function getFullSlotId(dateYmd, slotName) {
-      const dayType = isFridayDate(dateYmd) ? 'FRI' : 'REG';
-      return `${dateYmd}_${currentModeIsKbm ? 'KBM' : `NONKBM_${dayType}`}_${slotName}`;
+      return `${dateYmd}_${currentModeIsKbm ? 'KBM' : `NONKBM_${isFridayDate(dateYmd) ? 'FRI' : 'REG'}`}_${slotName}`;
     }
 
     function updateHeaderSwitches() {
@@ -394,30 +401,15 @@
         btnNonKbm.className = !currentModeIsKbm ? 'px-3 py-1.5 rounded-lg text-xs font-extrabold bg-violet-600 text-white transition' : 'px-3 py-1.5 rounded-lg text-xs font-extrabold text-slate-400 hover:text-white transition';
       }
       const titleEl = document.getElementById('service-title');
-      if (titleEl) {
-        titleEl.innerText = `Denah Perangkat - ${currentCategory === 'PC' ? 'PC' : 'Gadget'} ${currentModeIsKbm ? 'KBM' : 'Non-KBM'} (${formatIndoDateLabel(selectedDateStr)})`;
-      }
+      if (titleEl) titleEl.innerText = `Denah Perangkat - ${currentCategory === 'PC' ? 'PC' : 'Gadget'} ${currentModeIsKbm ? 'KBM' : 'Non-KBM'} (${formatIndoDateLabel(selectedDateStr)})`;
     }
 
-    function switchCategoryDirect(cat) {
-      currentCategory = cat;
-      enforceFridayRuleForSelectedDate();
-      updateHeaderSwitches();
-      syncFromCloud();
-    }
-
+    function switchCategoryDirect(cat) { currentCategory = cat; enforceFridayRuleForSelectedDate(); updateHeaderSwitches(); syncFromCloud(); }
     function switchModeDirect(isKbm) {
-      if (isKbm && isFridayDate(selectedDateStr)) {
-        alert('Oops, there are no KBM today! (Tanggal yang dipilih adalah hari Jumat. Silakan pilih tanggal lain di kalender/tombol hari untuk booking KBM)');
-        return;
-      }
+      if (isKbm && isFridayDate(selectedDateStr)) return alert('Oops, there are no KBM today! (Hari Jumat tidak ada jadwal KBM)');
       currentModeIsKbm = isKbm;
-      const activeMap = getActiveSchedulesMap();
-      selectedSlotKey = Object.keys(activeMap)[0] || 'Non-KBM 1';
-      updateHeaderSwitches();
-      renderSessionTabs();
-      populateScheduleDropdowns();
-      renderSeats();
+      selectedSlotKey = Object.keys(getActiveSchedulesMap())[0] || 'Non-KBM 1';
+      updateHeaderSwitches(); renderSessionTabs(); populateScheduleDropdowns(); renderSeats();
     }
 
     function selectBookingDate(ymd) {
@@ -426,18 +418,12 @@
       enforceFridayRuleForSelectedDate();
       const activeMap = getActiveSchedulesMap();
       if (!Object.keys(activeMap).includes(selectedSlotKey)) selectedSlotKey = Object.keys(activeMap)[0] || 'Non-KBM 1';
-      renderWeekDaysSelector();
-      updateHeaderSwitches();
-      renderSessionTabs();
-      populateScheduleDropdowns();
-      renderSeats();
+      renderWeekDaysSelector(); updateHeaderSwitches(); renderSessionTabs(); populateScheduleDropdowns(); renderSeats();
     }
 
     function onModalDateChange(ymd) {
       if (!ymd) return;
-      if (currentModeIsKbm && isFridayDate(ymd)) {
-        alert('Oops, there are no KBM today! (Tanggal yang dipilih jatuh pada hari Jumat, otomatis dialihkan ke sesi Non-KBM)');
-      }
+      if (currentModeIsKbm && isFridayDate(ymd)) alert('Oops, there are no KBM today! (Dialihkan ke sesi Non-KBM)');
       selectBookingDate(ymd);
       document.getElementById('modal-booking-date-label').innerText = `📅 ${formatIndoDateLabel(selectedDateStr)}`;
       document.getElementById('modal-mass-date-label').innerText = `📅 ${formatIndoDateLabel(selectedDateStr)}`;
@@ -447,23 +433,12 @@
     function renderWeekDaysSelector() {
       const container = document.getElementById('week-days-container');
       const customPicker = document.getElementById('custom-booking-date');
-      const todayYmd = getTodayDateString();
-      if (customPicker) { customPicker.min = todayYmd; customPicker.value = selectedDateStr; }
+      if (customPicker) { customPicker.min = getTodayDateString(); customPicker.value = selectedDateStr; }
       if (!container) return;
-
       container.innerHTML = getQuickWeekDays().map(d => {
         const isSelected = d.ymd === selectedDateStr;
-        return `
-          <button type="button" onclick="selectBookingDate('${d.ymd}')" class="p-2.5 rounded-xl border text-left transition ${isSelected ? 'bg-emerald-600 border-emerald-400 text-white shadow-lg shadow-emerald-600/25' : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-emerald-500/50'}">
-            <div class="flex items-center justify-between gap-1">
-              <span class="font-extrabold text-xs">${d.dayName}</span>
-              ${d.isToday ? `<span class="px-1.5 py-0.2 rounded text-[9px] font-bold ${isSelected ? 'bg-white/20 text-white' : 'bg-indigo-500/20 text-indigo-300'}">Hari Ini</span>` : ''}
-            </div>
-            <div class="text-[11px] ${isSelected ? 'text-emerald-100' : 'text-slate-400'} mt-0.5">${d.shortDate}</div>
-            <div class="text-[9px] mt-1 font-semibold ${isSelected ? 'text-white/90' : d.isFriday ? 'text-amber-400' : 'text-slate-500'}">${d.isFriday ? 'Non-KBM Only' : 'KBM & Non-KBM'}</div>
-          </button>`;
+        return `<button type="button" onclick="selectBookingDate('${d.ymd}')" class="p-2.5 rounded-xl border text-left transition ${isSelected ? 'bg-emerald-600 border-emerald-400 text-white shadow-lg shadow-emerald-600/25' : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-emerald-500/50'}"><div class="flex items-center justify-between gap-1"><span class="font-extrabold text-xs">${d.dayName}</span>${d.isToday ? `<span class="px-1.5 py-0.2 rounded text-[9px] font-bold ${isSelected ? 'bg-white/20 text-white' : 'bg-indigo-500/20 text-indigo-300'}">Hari Ini</span>` : ''}</div><div class="text-[11px] ${isSelected ? 'text-emerald-100' : 'text-slate-400'} mt-0.5">${d.shortDate}</div><div class="text-[9px] mt-1 font-semibold ${isSelected ? 'text-white/90' : d.isFriday ? 'text-amber-400' : 'text-slate-500'}">${d.isFriday ? 'Non-KBM Only' : 'KBM & Non-KBM'}</div></button>`;
       }).join('');
-
       const badge = document.getElementById('active-day-badge');
       if (badge) badge.innerText = `📆 ${formatIndoDateLabel(selectedDateStr)}`;
     }
@@ -473,14 +448,12 @@
       const dayName = now.getDay() === 0 ? 'Ahad' : now.toLocaleDateString('id-ID', { weekday: 'long' });
       document.getElementById('live-date-display').innerText = `📅 ${dayName}, ${now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
       document.getElementById('live-week-display').innerText = `🗓️ Pekan ke-${Math.ceil(now.getDate() / 7)}`;
-
       const friday = isFridayToday();
       [
         { desc: 'desc-gadget-kbm', action: 'action-gadget-kbm', defaultDesc: 'Laptop DELL & Chromebook saat jam KBM (07.00 - 14.00).', defaultAction: 'Buka Denah Gadget →', defaultColor: 'text-blue-400' },
         { desc: 'desc-pc-kbm', action: 'action-pc-kbm', defaultDesc: 'Komputer PC Desktop saat jam KBM (07.00 - 14.00).', defaultAction: 'Buka Denah PC →', defaultColor: 'text-emerald-400' }
       ].forEach(item => {
-        const descEl = document.getElementById(item.desc);
-        const actionEl = document.getElementById(item.action);
+        const descEl = document.getElementById(item.desc), actionEl = document.getElementById(item.action);
         if (!descEl || !actionEl) return;
         descEl.innerText = friday ? 'Hari ini Jumat (KBM tutup). Klik untuk booking KBM hari lain (Ahad–Kamis).' : item.defaultDesc;
         actionEl.className = friday ? 'text-xs font-extrabold text-amber-400' : `text-xs font-bold ${item.defaultColor}`;
@@ -488,44 +461,24 @@
       });
     }
 
-    function selectSessionSlot(slotName) {
-      selectedSlotKey = slotName;
-      renderSessionTabs();
-      populateScheduleDropdowns();
-      renderSeats();
-    }
-
-    function onModalSessionChange(slotName) {
-      selectedSlotKey = slotName;
-      renderSessionTabs();
-      renderSeats();
-    }
+    function selectSessionSlot(slotName) { selectedSlotKey = slotName; renderSessionTabs(); populateScheduleDropdowns(); renderSeats(); }
+    function onModalSessionChange(slotName) { selectedSlotKey = slotName; renderSessionTabs(); renderSeats(); }
 
     function renderSessionTabs() {
       const container = document.getElementById('session-tabs-container');
       if (!container) return;
-      const activeMap = getActiveSchedulesMap();
-      const keys = Object.keys(activeMap);
+      const activeMap = getActiveSchedulesMap(), keys = Object.keys(activeMap);
       if (!keys.includes(selectedSlotKey) && keys.length > 0) selectedSlotKey = keys[0];
-
       container.className = keys.length <= 2 ? 'grid grid-cols-1 sm:grid-cols-2 gap-2.5' : 'grid grid-cols-2 sm:grid-cols-4 gap-2.5';
       container.innerHTML = keys.map(k => {
-        const s = activeMap[k];
-        const isActive = selectedSlotKey === k;
-        return `
-          <button type="button" onclick="selectSessionSlot('${k}')" class="p-3 rounded-xl border text-left transition ${isActive ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-600/25' : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-indigo-500/50'}">
-            <div class="font-extrabold text-xs">${k}</div>
-            <div class="text-[11px] ${isActive ? 'text-indigo-100' : 'text-slate-400'} mt-0.5">⏰ ${s.label}</div>
-          </button>`;
+        const s = activeMap[k], isActive = selectedSlotKey === k;
+        return `<button type="button" onclick="selectSessionSlot('${k}')" class="p-3 rounded-xl border text-left transition ${isActive ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-600/25' : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-indigo-500/50'}"><div class="font-extrabold text-xs">${k}</div><div class="text-[11px] ${isActive ? 'text-indigo-100' : 'text-slate-400'} mt-0.5">⏰ ${s.label}</div></button>`;
       }).join('');
-
       const activeSched = activeMap[selectedSlotKey];
       const badge = document.getElementById('active-session-badge');
       if (badge && activeSched) badge.innerText = `Aktif: ${selectedSlotKey} (${activeSched.label})`;
       const massDesc = document.getElementById('mass-banner-desc');
-      if (massDesc && activeSched) {
-        massDesc.innerText = `Pinjam seluruh ${currentCategory === 'PC' ? 'unit PC' : 'unit Gadget'} kosong untuk ${formatIndoDateLabel(selectedDateStr)} sesi ${selectedSlotKey} (${activeSched.label}).`;
-      }
+      if (massDesc && activeSched) massDesc.innerText = `Pinjam seluruh ${currentCategory === 'PC' ? 'unit PC' : 'unit Gadget'} kosong untuk ${formatIndoDateLabel(selectedDateStr)} sesi ${selectedSlotKey} (${activeSched.label}).`;
     }
 
     function populateScheduleDropdowns() {
@@ -556,27 +509,40 @@
       updateHeaderSwitches();
 
       const key = `labkom_devices_${currentCategory}`;
+      const localCached = JSON.parse(localStorage.getItem(key) || 'null');
       const { data: devRow, error } = await sb.from('labkom_store').select('payload').eq('id', key).maybeSingle();
-      if (!error && devRow && devRow.payload) {
+
+      if (error) {
+        setCloudStatus(false, error.message);
+        devicesState = localCached || getDefaultDevices(currentCategory);
+      } else if (devRow && devRow.payload) {
         devicesState = devRow.payload;
-      } else if (!error && !devRow) {
-        devicesState = getDefaultDevices(currentCategory);
-        await sb.from('labkom_store').upsert({ id: key, payload: devicesState });
+        // Jika ada data lokal yang belum masuk ke Supabase, gabungkan dan dorong ke cloud sekali
+        if (localCached && !hasPushedLocalOnce[currentCategory]) {
+          let merged = false;
+          Object.keys(localCached).forEach(id => {
+            const lb = localCached[id]?.bookings || {};
+            if (!devicesState[id]) devicesState[id] = localCached[id];
+            if (!devicesState[id].bookings) devicesState[id].bookings = {};
+            Object.entries(lb).forEach(([slotK, slotV]) => {
+              if (!devicesState[id].bookings[slotK]) { devicesState[id].bookings[slotK] = slotV; merged = true; }
+            });
+          });
+          hasPushedLocalOnce[currentCategory] = true;
+          if (merged) await sb.from('labkom_store').upsert({ id: key, payload: devicesState, updated_at: new Date().toISOString() });
+        }
+        setCloudStatus(true, new Date().toLocaleTimeString('id-ID'));
       } else {
-        devicesState = JSON.parse(localStorage.getItem(key) || 'null') || getDefaultDevices(currentCategory);
+        devicesState = localCached || getDefaultDevices(currentCategory);
+        const { error: initErr } = await sb.from('labkom_store').upsert({ id: key, payload: devicesState, updated_at: new Date().toISOString() });
+        if (initErr) setCloudStatus(false, initErr.message);
+        else setCloudStatus(true, 'Database siap');
       }
 
       Object.keys(devicesState).forEach(id => {
         if (!devicesState[id].bookings || typeof devicesState[id].bookings !== 'object') devicesState[id].bookings = {};
       });
       localStorage.setItem(key, JSON.stringify(devicesState));
-
-      const { data: schedRow } = await sb.from('labkom_store').select('payload').eq('id', 'labkom_schedules').maybeSingle();
-      if (schedRow && schedRow.payload) {
-        if (schedRow.payload.kbm) kbmSchedules = schedRow.payload.kbm;
-        if (schedRow.payload.nonKbmWeekday && Object.values(schedRow.payload.nonKbmWeekday).some(s => s.label.includes('14:00'))) nonKbmWeekdaySchedules = schedRow.payload.nonKbmWeekday;
-        if (schedRow.payload.nonKbmFriday && Object.values(schedRow.payload.nonKbmFriday).some(s => s.label.includes('14:00'))) nonKbmFridaySchedules = schedRow.payload.nonKbmFriday;
-      }
 
       renderWeekDaysSelector();
       renderSessionTabs();
@@ -591,7 +557,13 @@
       localStorage.setItem(key, JSON.stringify(devicesState));
       renderSeats();
       checkCurrentDeviceLock();
-      await sb.from('labkom_store').upsert({ id: key, payload: devicesState, updated_at: new Date().toISOString() });
+      const { error } = await sb.from('labkom_store').upsert({ id: key, payload: devicesState, updated_at: new Date().toISOString() });
+      if (error) {
+        setCloudStatus(false, error.message);
+        alert('⚠️ Booking tersimpan di perangkat ini, tapi GAGAL kirim ke Cloud Supabase: ' + error.message);
+      } else {
+        setCloudStatus(true, 'Tersimpan ke Cloud');
+      }
       isSaving = false;
     }
 
@@ -603,7 +575,6 @@
       const urlParams = new URLSearchParams(window.location.search);
       currentDeviceId = urlParams.get('device');
       if (currentDeviceId) {
-        document.getElementById('device-indicator').innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Perangkat: <strong class="text-emerald-400">${currentDeviceId}</strong>`;
         currentCategory = currentDeviceId.startsWith('PC') ? 'PC' : 'GADGET';
         currentModeIsKbm = !isFridayDate(selectedDateStr);
         updateHeaderSwitches();
@@ -681,7 +652,7 @@
         const entries = dev.bookings ? Object.values(dev.bookings).filter(b => b && b.date === selectedDateStr) : [];
         if (entries.length > 0) {
           totalBooked += entries.length;
-          rowsHtml += `<div class="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2"><div class="flex justify-between items-center"><span class="font-extrabold text-white text-sm">🖥️ ${dev.id}</span><span class="text-[11px] text-indigo-300 font-bold">${entries.length} Sesi Terbooking</span></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${entries.map(b => `<div class="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800"><div><div class="text-[11px] font-extrabold text-indigo-400">${b.sessionName} <span class="text-slate-500 font-normal">(${b.timeLabel || ''})</span></div><div class="text-xs font-semibold text-slate-200 mt-0.5">👤 ${b.user}</div></div></div>`).join('')}</div></div>`;
+          rowsHtml += `<div class="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2"><div class="flex justify-between items-center"><span class="font-extrabold text-white text-sm">🖥️ ${dev.id}</span><span class="text-[11px] text-indigo-300 font-bold">${entries.length} Sesi Terbooking</span></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${entries.map(b => `<div class="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800"><div class="text-[11px] font-extrabold text-indigo-400">${b.sessionName} <span class="text-slate-500 font-normal">(${b.timeLabel || ''})</span></div><div class="text-xs font-semibold text-slate-200 mt-0.5">👤 ${b.user}</div></div>`).join('')}</div></div>`;
         }
       });
       document.getElementById('detail-modal-title').innerText = `📅 Rekap Booking ${currentCategory}`;
@@ -693,14 +664,7 @@
     function closeDetailModal() { document.getElementById('schedule-detail-modal').classList.add('hidden'); }
 
     function switchView(view) {
-      if (view !== 'menu') {
-        enforceFridayRuleForSelectedDate();
-        updateHeaderSwitches();
-        renderWeekDaysSelector();
-        renderSessionTabs();
-        populateScheduleDropdowns();
-        renderSeats();
-      }
+      if (view !== 'menu') { enforceFridayRuleForSelectedDate(); updateHeaderSwitches(); renderWeekDaysSelector(); renderSessionTabs(); populateScheduleDropdowns(); renderSeats(); }
       document.getElementById('view-menu').classList.toggle('hidden', view !== 'menu');
       document.getElementById('view-grid').classList.toggle('hidden', view === 'menu');
       document.getElementById('btn-nav-menu').className = view === 'menu' ? 'px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 text-white' : 'px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white';
@@ -721,12 +685,10 @@
       selectedSeatId = id;
       document.getElementById('modal-seat-id').innerText = id;
       const modalPicker = document.getElementById('modal-date-picker');
-      modalPicker.min = getTodayDateString();
-      modalPicker.value = selectedDateStr;
+      modalPicker.min = getTodayDateString(); modalPicker.value = selectedDateStr;
       document.getElementById('modal-booking-date-label').innerText = `📅 ${formatIndoDateLabel(selectedDateStr)}`;
       document.getElementById('input-student-name').value = '';
-      populateScheduleDropdowns();
-      updateModalExistingInfo(id);
+      populateScheduleDropdowns(); updateModalExistingInfo(id);
       document.getElementById('booking-modal').classList.remove('hidden');
     }
 
@@ -752,8 +714,7 @@
       document.getElementById('input-mass-name').value = '';
       document.getElementById('mass-cat-label').innerText = currentCategory === 'PC' ? 'Semua PC' : 'Semua Gadget';
       const modalMassPicker = document.getElementById('modal-mass-date-picker');
-      modalMassPicker.min = getTodayDateString();
-      modalMassPicker.value = selectedDateStr;
+      modalMassPicker.min = getTodayDateString(); modalMassPicker.value = selectedDateStr;
       document.getElementById('modal-mass-date-label').innerText = `📅 ${formatIndoDateLabel(selectedDateStr)}`;
       populateScheduleDropdowns();
       document.getElementById('mass-booking-modal').classList.remove('hidden');
