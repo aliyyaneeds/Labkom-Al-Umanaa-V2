@@ -14,19 +14,19 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen antialiased flex flex-col justify-between">
 
-  <!-- Login Overlay (Selalu muncul setiap kali membuka Admin Panel) -->
+  <!-- Login Overlay -->
   <div id="admin-login-overlay" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4">
     <div class="glass-card rounded-3xl p-8 max-w-sm w-full text-center space-y-5 border border-rose-500/30 shadow-2xl">
       <div class="w-16 h-16 bg-rose-500/20 text-rose-400 rounded-2xl flex items-center justify-center text-3xl mx-auto">🔐</div>
       <div>
         <h2 class="text-xl font-black text-white">Akses Terkunci - Admin Labkom</h2>
-        <p class="text-xs text-slate-400 mt-1">Masukkan Password / Master PIN untuk membuka Panel Admin.</p>
+        <p class="text-xs text-slate-400 mt-1">Masukkan Master PIN untuk membuka Panel Admin.</p>
       </div>
       <form onsubmit="event.preventDefault(); checkAdminLogin();" class="space-y-3">
         <input type="password" id="admin-pin-input" autocomplete="off" placeholder="Masukkan PIN Admin" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-center font-bold tracking-widest text-lg text-white focus:border-indigo-500 outline-none">
-        <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-indigo-600/25">🔓 BUKA ADMIN PANEL</button>
+        <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs">🔓 BUKA ADMIN PANEL</button>
       </form>
-      <p id="admin-login-error" class="text-xs text-rose-400 font-semibold hidden">⚠️ Password / PIN Salah! Akses ditolak.</p>
+      <p id="admin-login-error" class="text-xs text-rose-400 font-semibold hidden">⚠️ Password / PIN Salah!</p>
       <a href="index.html" class="block text-xs text-slate-400 hover:text-white pt-2">← Kembali ke Halaman Utama</a>
     </div>
   </div>
@@ -38,12 +38,13 @@
         <div class="w-10 h-10 bg-rose-600 rounded-xl flex items-center justify-center font-black text-lg">⚙️</div>
         <div>
           <h1 class="font-extrabold text-base text-white">Admin Control Center</h1>
-          <p class="text-[11px] text-emerald-400">● Cloud Sync & Jadwal Perminggu Aktif</p>
+          <p id="cloud-sync-status" class="text-[11px] text-emerald-400">● Cloud Sync Aktif</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
+        <button type="button" onclick="syncAllFromCloud(true)" class="px-3.5 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-bold">🔄 Refresh Data</button>
         <a href="index.html" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold">🏠 Lihat Denah</a>
-        <button type="button" onclick="logoutAdmin()" class="px-4 py-2 bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-bold">🔒 Kunci & Keluar</button>
+        <button type="button" onclick="logoutAdmin()" class="px-4 py-2 bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-bold">🔒 Keluar</button>
       </div>
     </div>
   </header>
@@ -51,38 +52,24 @@
   <!-- Main Content -->
   <main id="admin-main-content" class="hidden max-w-7xl mx-auto px-4 py-8 flex-1 w-full space-y-8">
     
-    <!-- Stats Summary -->
+    <!-- Stats -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-      <div class="glass-card p-5 rounded-2xl">
-        <p class="text-xs text-slate-400">Total Perangkat</p>
-        <p id="stat-total" class="text-2xl font-black text-white mt-1">38</p>
-      </div>
-      <div class="glass-card p-5 rounded-2xl">
-        <p class="text-xs text-emerald-400">Unit Normal</p>
-        <p id="stat-free" class="text-2xl font-black text-emerald-400 mt-1">0</p>
-      </div>
-      <div class="glass-card p-5 rounded-2xl">
-        <p class="text-xs text-rose-400">Total Slot Terbooking</p>
-        <p id="stat-occupied" class="text-2xl font-black text-rose-400 mt-1">0</p>
-      </div>
-      <div class="glass-card p-5 rounded-2xl">
-        <p class="text-xs text-amber-400">Perawatan / Rusak</p>
-        <p id="stat-maintenance" class="text-2xl font-black text-amber-400 mt-1">0</p>
-      </div>
+      <div class="glass-card p-5 rounded-2xl"><p class="text-xs text-slate-400">Total Perangkat</p><p id="stat-total" class="text-2xl font-black text-white mt-1">38</p></div>
+      <div class="glass-card p-5 rounded-2xl"><p class="text-xs text-emerald-400">Unit Normal</p><p id="stat-free" class="text-2xl font-black text-emerald-400 mt-1">0</p></div>
+      <div class="glass-card p-5 rounded-2xl"><p class="text-xs text-rose-400">Total Slot Terbooking</p><p id="stat-occupied" class="text-2xl font-black text-rose-400 mt-1">0</p></div>
+      <div class="glass-card p-5 rounded-2xl"><p class="text-xs text-amber-400">Perawatan / Rusak</p><p id="stat-maintenance" class="text-2xl font-black text-amber-400 mt-1">0</p></div>
     </div>
 
-    <!-- Jadwal Peminjaman & Reset Mingguan -->
+    <!-- Daftar Peminjaman Aktif -->
     <div class="glass-card rounded-3xl p-6 space-y-4 border border-indigo-500/30">
       <div class="flex flex-wrap justify-between items-center gap-3 border-b border-slate-800 pb-4">
         <div>
-          <h2 class="text-base font-extrabold text-white">📋 Jadwal Peminjaman Aktif (Semua Hari dalam Pekan Ini)</h2>
+          <h2 class="text-base font-extrabold text-white">📋 Daftar Peminjaman Aktif (Edit & Hapus)</h2>
           <p id="today-log-subtitle" class="text-xs text-slate-400">Memuat daftar peminjam...</p>
         </div>
         <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <input type="text" id="search-booking-input" oninput="renderBookingsLog()" placeholder="🔍 Cari nama / tanggal / PC..." class="px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white flex-1 sm:w-56">
-          <button type="button" onclick="resetAllBookingsWeekly()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-extrabold shadow-md shadow-rose-600/20">
-            🗑️ Reset Semua Booking Minggu Ini (Gadget & PC)
-          </button>
+          <button type="button" onclick="resetAllBookingsWeekly()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-extrabold">🗑️ Reset Semua Booking (Gadget & PC)</button>
         </div>
       </div>
       <div class="overflow-x-auto max-h-96 overflow-y-auto">
@@ -94,7 +81,7 @@
               <th class="py-2.5 px-3">Hari & Tanggal</th>
               <th class="py-2.5 px-3">Sesi Waktu</th>
               <th class="py-2.5 px-3">Nama Peminjam</th>
-              <th class="py-2.5 px-3 text-right">Aksi Hapus</th>
+              <th class="py-2.5 px-3 text-right">Edit / Hapus</th>
             </tr>
           </thead>
           <tbody id="today-bookings-tbody" class="divide-y divide-slate-800/60 text-xs"></tbody>
@@ -102,28 +89,25 @@
       </div>
     </div>
 
-    <!-- Pengaturan Jadwal Sesi -->
+    <!-- Pengaturan Jadwal -->
     <div class="glass-card rounded-3xl p-6 space-y-6">
       <div class="flex flex-wrap justify-between items-center gap-2 border-b border-slate-800 pb-3">
         <div>
           <h2 class="text-base font-extrabold text-white">⏰ Pengaturan Jam Sesi (Jeda Sholat 15.00 – 16.00)</h2>
-          <p class="text-xs text-slate-400">Atur rentang waktu untuk KBM (Ahad–Kamis), Non-KBM Hari Biasa (14.00–15.00 & 16.00–17.00), dan Non-KBM Khusus Jumat.</p>
+          <p class="text-xs text-slate-400">KBM (Ahad–Kamis), Non-KBM Hari Biasa (14.00–15.00 & 16.00–17.00), dan Non-KBM Jumat.</p>
         </div>
-        <button type="button" onclick="saveSchedules()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold">💾 Simpan Semua Jadwal</button>
+        <button type="button" onclick="saveSchedules()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold">💾 Simpan Jadwal</button>
       </div>
-
       <div class="space-y-2">
-        <h3 class="text-xs font-extrabold text-blue-400 uppercase tracking-wider">1. Jadwal KBM (Ahad – Kamis, s.d. 14.00)</h3>
+        <h3 class="text-xs font-extrabold text-blue-400 uppercase">1. Jadwal KBM (Ahad – Kamis, s.d. 14.00)</h3>
         <div id="schedules-kbm-editor" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
       </div>
-
       <div class="space-y-2">
-        <h3 class="text-xs font-extrabold text-cyan-400 uppercase tracking-wider">2. Jadwal Non-KBM Hari Biasa (14.00 – 15.00 & 16.00 – 17.00)</h3>
+        <h3 class="text-xs font-extrabold text-cyan-400 uppercase">2. Jadwal Non-KBM Hari Biasa (14.00–15.00 & 16.00–17.00)</h3>
         <div id="schedules-nonkbm-reg-editor" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
       </div>
-
       <div class="space-y-2">
-        <h3 class="text-xs font-extrabold text-violet-400 uppercase tracking-wider">3. Jadwal Non-KBM Khusus Setiap Hari Jumat (Jeda Sholat 15.00 – 16.00)</h3>
+        <h3 class="text-xs font-extrabold text-violet-400 uppercase">3. Jadwal Non-KBM Khusus Jumat (Jeda Sholat 15.00–16.00)</h3>
         <div id="schedules-nonkbm-fri-editor" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
       </div>
     </div>
@@ -135,16 +119,15 @@
           <button type="button" onclick="switchTab('GADGET')" id="tab-gadget" class="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white">📱 Gadget (12 Unit)</button>
           <button type="button" onclick="switchTab('PC')" id="tab-pc" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-400">🖥️ PC Desktop (26 Unit)</button>
         </div>
-        <button type="button" onclick="resetAllCurrentCategory()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold">🔄 Kosongkan Semua Booking Kategori Ini</button>
+        <button type="button" onclick="resetAllCurrentCategory()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold">🔄 Kosongkan Kategori Ini</button>
       </div>
-
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="border-b border-slate-800 text-[11px] uppercase text-slate-400">
               <th class="py-3 px-3">ID Unit</th>
-              <th class="py-3 px-3">Kondisi Unit</th>
-              <th class="py-3 px-3">Jadwal Booking Aktif (Semua Hari & Sesi)</th>
+              <th class="py-3 px-3">Kondisi</th>
+              <th class="py-3 px-3">Jadwal Booking Aktif</th>
               <th class="py-3 px-3 text-right">Aksi Kontrol</th>
             </tr>
           </thead>
@@ -152,7 +135,6 @@
         </table>
       </div>
     </div>
-
   </main>
 
   <footer class="py-4 text-center text-xs text-slate-500 border-t border-slate-900">© Labkom Al-Umanaa Admin System.</footer>
@@ -175,12 +157,10 @@
       'KBM-3': { label: '10:00 - 11:20', minutes: 80 },
       'KBM-4': { label: '12:40 - 14:00', minutes: 80 }
     };
-
     let nonKbmWeekdaySchedules = {
       'Non-KBM 1': { label: '14:00 - 15:00', minutes: 60 },
       'Non-KBM 2': { label: '16:00 - 17:00', minutes: 60 }
     };
-
     let nonKbmFridaySchedules = {
       'Non-KBM 1': { label: '07:30 - 09:30', minutes: 120 },
       'Non-KBM 2': { label: '09:30 - 11:30', minutes: 120 },
@@ -188,20 +168,44 @@
       'Non-KBM 4': { label: '16:00 - 17:00', minutes: 60 }
     };
 
+    function getTodayDateString() {
+      const n = new Date();
+      return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+    }
+
     function formatIndoDateLabel(ymd) {
-      if (!ymd) return '-';
+      if (!ymd || typeof ymd !== 'string' || !ymd.includes('-')) return 'Aktif';
       const [y, m, d] = ymd.split('-').map(Number);
-      const dateObj = new Date(y, m - 1, d);
-      const dayName = dateObj.getDay() === 0
-        ? 'Ahad'
-        : dateObj.toLocaleDateString('id-ID', { weekday: 'long' });
-      const rest = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-      return `${dayName}, ${rest}`;
+      if (!y || !m || !d) return ymd;
+      const dt = new Date(y, m - 1, d);
+      const dayName = dt.getDay() === 0 ? 'Ahad' : dt.toLocaleDateString('id-ID', { weekday: 'long' });
+      return `${dayName}, ${dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+    }
+
+    function normalizeDevice(dev) {
+      if (!dev.bookings || typeof dev.bookings !== 'object') dev.bookings = {};
+      if (dev.status === 'occupied' && dev.user) {
+        const k = `LEGACY_${dev.jampel || 'Sesi'}`;
+        if (!dev.bookings[k]) {
+          dev.bookings[k] = { user: dev.user, sessionName: dev.jampel || 'Terjadwal', timeLabel: dev.jampel || '-', date: getTodayDateString(), dayLabel: formatIndoDateLabel(getTodayDateString()) };
+        }
+        dev.status = 'free';
+        delete dev.user;
+      }
+      Object.entries(dev.bookings).forEach(([k, b]) => {
+        if (!b || typeof b !== 'object') return;
+        if (!b.date) {
+          const m = k.match(/^(\d{4}-\d{2}-\d{2})_/);
+          b.date = m ? m[1] : getTodayDateString();
+        }
+        if (!b.dayLabel) b.dayLabel = formatIndoDateLabel(b.date);
+        if (!b.sessionName) b.sessionName = k.split('_').pop() || 'Sesi';
+      });
+      return dev;
     }
 
     function checkAdminLogin() {
-      const pin = document.getElementById('admin-pin-input').value.trim();
-      if (pin === MASTER_PIN) {
+      if (document.getElementById('admin-pin-input').value.trim() === MASTER_PIN) {
         isAuthenticated = true;
         document.getElementById('admin-pin-input').value = '';
         document.getElementById('admin-login-error').classList.add('hidden');
@@ -218,7 +222,6 @@
       if (syncIntervalId) clearInterval(syncIntervalId);
       document.getElementById('admin-main-content').classList.add('hidden');
       document.getElementById('admin-login-overlay').classList.remove('hidden');
-      document.getElementById('admin-pin-input').value = '';
     }
 
     function getDefaultDevices(cat) {
@@ -232,34 +235,30 @@
       return def;
     }
 
-    async function syncAllFromCloud() {
+    async function syncAllFromCloud(manual = false) {
       if (!isAuthenticated || isSaving) return;
+      const statusEl = document.getElementById('cloud-sync-status');
+      if (manual && statusEl) statusEl.innerText = '● Mengambil data dari Supabase...';
+
       for (const cat of ['GADGET', 'PC']) {
         const key = `labkom_devices_${cat}`;
         const { data, error } = await sb.from('labkom_store').select('payload').eq('id', key).maybeSingle();
         if (!error && data && data.payload) {
           allDevices[cat] = data.payload;
         } else {
-          allDevices[cat] = getDefaultDevices(cat);
+          allDevices[cat] = JSON.parse(localStorage.getItem(key) || 'null') || getDefaultDevices(cat);
         }
-        Object.keys(allDevices[cat]).forEach(id => {
-          if (!allDevices[cat][id].bookings || typeof allDevices[cat][id].bookings !== 'object') {
-            allDevices[cat][id].bookings = {};
-          }
-        });
+        Object.keys(allDevices[cat]).forEach(id => normalizeDevice(allDevices[cat][id]));
       }
 
       const { data: schedRow } = await sb.from('labkom_store').select('payload').eq('id', 'labkom_schedules').maybeSingle();
       if (schedRow && schedRow.payload) {
         if (schedRow.payload.kbm) kbmSchedules = schedRow.payload.kbm;
-        if (schedRow.payload.nonKbmWeekday && Object.values(schedRow.payload.nonKbmWeekday).some(s => s.label.includes('14:00'))) {
-          nonKbmWeekdaySchedules = schedRow.payload.nonKbmWeekday;
-        }
-        if (schedRow.payload.nonKbmFriday && Object.values(schedRow.payload.nonKbmFriday).some(s => s.label.includes('14:00'))) {
-          nonKbmFridaySchedules = schedRow.payload.nonKbmFriday;
-        }
+        if (schedRow.payload.nonKbmWeekday && Object.values(schedRow.payload.nonKbmWeekday).some(s => s.label.includes('14:00'))) nonKbmWeekdaySchedules = schedRow.payload.nonKbmWeekday;
+        if (schedRow.payload.nonKbmFriday && Object.values(schedRow.payload.nonKbmFriday).some(s => s.label.includes('14:00'))) nonKbmFridaySchedules = schedRow.payload.nonKbmFriday;
       }
 
+      if (statusEl) statusEl.innerText = `● Cloud Sync Aktif (${new Date().toLocaleTimeString('id-ID')})`;
       renderStats();
       renderBookingsLog();
       renderSchedules();
@@ -280,13 +279,11 @@
     function renderStats() {
       let total = 0, normal = 0, totalSlots = 0, maintenance = 0;
       ['GADGET', 'PC'].forEach(cat => {
-        Object.values(allDevices[cat]).forEach(d => {
+        Object.values(allDevices[cat] || {}).forEach(d => {
           total++;
           if (d.status === 'maintenance') maintenance++;
           else normal++;
-          if (d.bookings) {
-            totalSlots += Object.keys(d.bookings).length;
-          }
+          if (d.bookings) totalSlots += Object.keys(d.bookings).length;
         });
       });
       document.getElementById('stat-total').innerText = total;
@@ -298,31 +295,25 @@
     function renderBookingsLog() {
       const tbody = document.getElementById('today-bookings-tbody');
       const subtitle = document.getElementById('today-log-subtitle');
-      if (!tbody) return;
-
       const keyword = (document.getElementById('search-booking-input')?.value || '').toLowerCase().trim();
       const rows = [];
 
       ['GADGET', 'PC'].forEach(cat => {
         Object.values(allDevices[cat] || {}).forEach(dev => {
-          if (!dev.bookings) return;
-          Object.entries(dev.bookings).forEach(([slotKey, b]) => {
-            if (b) {
-              const dayText = b.dayLabel || formatIndoDateLabel(b.date);
-              const matchText = `${dev.id} ${cat} ${b.sessionName} ${b.timeLabel} ${b.user} ${dayText} ${b.date || ''}`.toLowerCase();
-              if (!keyword || matchText.includes(keyword)) {
-                rows.push({ cat, devId: dev.id, slotKey, dayText, ...b });
-              }
-            }
+          Object.entries(dev.bookings || {}).forEach(([slotKey, b]) => {
+            if (!b) return;
+            const dayText = b.dayLabel || formatIndoDateLabel(b.date);
+            const match = `${dev.id} ${cat} ${b.sessionName} ${b.timeLabel} ${b.user} ${dayText}`.toLowerCase();
+            if (!keyword || match.includes(keyword)) rows.push({ cat, devId: dev.id, slotKey, dayText, ...b });
           });
         });
       });
 
       rows.sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.devId.localeCompare(b.devId));
-      subtitle.innerText = `Menampilkan ${rows.length} jadwal peminjaman aktif (Bisa dihapus satuan atau di-reset sekaligus)`;
+      subtitle.innerText = `Menampilkan ${rows.length} jadwal peminjaman aktif`;
 
       if (rows.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-500">Tidak ada jadwal peminjaman yang tersimpan saat ini.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-500">Belum ada jadwal peminjaman yang tersimpan saat ini.</td></tr>`;
         return;
       }
 
@@ -333,47 +324,51 @@
           <td class="py-2.5 px-3 font-semibold text-amber-300 text-[11px]">📆 ${r.dayText}</td>
           <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold text-[11px]">${r.sessionName}</span> <span class="text-slate-500 text-[11px]">(${r.timeLabel || '-'})</span></td>
           <td class="py-2.5 px-3 font-bold text-emerald-300">👤 ${r.user}</td>
-          <td class="py-2.5 px-3 text-right">
+          <td class="py-2.5 px-3 text-right space-x-1 whitespace-nowrap">
+            <button type="button" onclick="editBookingUser('${r.cat}', '${r.devId}', '${r.slotKey}')" class="px-2.5 py-1 bg-amber-600/20 hover:bg-amber-600 text-amber-300 hover:text-white rounded-lg text-[11px] font-bold">✏️ Edit</button>
             <button type="button" onclick="removeBookingFromCat('${r.cat}', '${r.devId}', '${r.slotKey}')" class="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white rounded-lg text-[11px] font-bold">🗑️ Hapus</button>
           </td>
         </tr>
       `).join('');
     }
 
+    async function editBookingUser(cat, devId, slotKey) {
+      const booking = allDevices[cat]?.[devId]?.bookings?.[slotKey];
+      if (!booking) return;
+      const newName = prompt(`Ubah nama peminjam untuk ${devId} (${booking.dayLabel} - ${booking.sessionName}):`, booking.user);
+      if (newName && newName.trim()) {
+        booking.user = newName.trim();
+        await saveCategoryToCloud(cat);
+      }
+    }
+
     async function removeBookingFromCat(cat, devId, slotKey) {
-      if (allDevices[cat][devId] && allDevices[cat][devId].bookings) {
+      if (allDevices[cat]?.[devId]?.bookings) {
         delete allDevices[cat][devId].bookings[slotKey];
         await saveCategoryToCloud(cat);
       }
     }
 
     async function resetAllBookingsWeekly() {
-      if (!confirm('Hapus SEMUA bookingan minggu ini di seluruh Gadget & PC agar bersih untuk minggu depan?')) return;
+      if (!confirm('Hapus SEMUA bookingan di seluruh Gadget & PC?')) return;
       for (const cat of ['GADGET', 'PC']) {
         Object.keys(allDevices[cat]).forEach(id => {
           allDevices[cat][id] = { ...allDevices[cat][id], bookings: {}, alarmLocked: false };
         });
         await saveCategoryToCloud(cat);
       }
-      alert('Berhasil! Semua jadwal booking Gadget & PC sudah dibersihkan untuk pekan baru.');
+      alert('Semua jadwal booking Gadget & PC berhasil dihapus!');
     }
 
     function buildScheduleInputs(containerId, prefix, mapObj) {
       const container = document.getElementById(containerId);
-      if (!container) return;
-      if (document.activeElement && container.contains(document.activeElement)) return;
-      container.innerHTML = Object.keys(mapObj).map((key, idx) => {
-        const s = mapObj[key];
-        return `
-          <div class="bg-slate-900/80 border border-slate-800 p-3.5 rounded-2xl space-y-2">
-            <div class="font-bold text-indigo-300 text-xs">${key}</div>
-            <div>
-              <label class="text-[10px] text-slate-400">Jam Sesi</label>
-              <input type="text" id="${prefix}-label-${idx}" data-key="${key}" value="${s.label}" class="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-white mt-0.5">
-            </div>
-          </div>
-        `;
-      }).join('');
+      if (!container || (document.activeElement && container.contains(document.activeElement))) return;
+      container.innerHTML = Object.keys(mapObj).map((key, idx) => `
+        <div class="bg-slate-900/80 border border-slate-800 p-3.5 rounded-2xl space-y-1.5">
+          <div class="font-bold text-indigo-300 text-xs">${key}</div>
+          <input type="text" id="${prefix}-label-${idx}" value="${mapObj[key].label}" class="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-white">
+        </div>
+      `).join('');
     }
 
     function renderSchedules() {
@@ -383,26 +378,11 @@
     }
 
     async function saveSchedules() {
-      Object.keys(kbmSchedules).forEach((key, idx) => {
-        const el = document.getElementById(`kbm-label-${idx}`);
-        if (el) kbmSchedules[key].label = el.value.trim();
-      });
-      Object.keys(nonKbmWeekdaySchedules).forEach((key, idx) => {
-        const el = document.getElementById(`nonkbm-reg-label-${idx}`);
-        if (el) nonKbmWeekdaySchedules[key].label = el.value.trim();
-      });
-      Object.keys(nonKbmFridaySchedules).forEach((key, idx) => {
-        const el = document.getElementById(`nonkbm-fri-label-${idx}`);
-        if (el) nonKbmFridaySchedules[key].label = el.value.trim();
-      });
-
-      const payload = {
-        kbm: kbmSchedules,
-        nonKbmWeekday: nonKbmWeekdaySchedules,
-        nonKbmFriday: nonKbmFridaySchedules
-      };
-      await sb.from('labkom_store').upsert({ id: 'labkom_schedules', payload, updated_at: new Date().toISOString() });
-      alert('Semua jadwal berhasil diperbarui!');
+      Object.keys(kbmSchedules).forEach((k, i) => { const el = document.getElementById(`kbm-label-${i}`); if (el) kbmSchedules[k].label = el.value.trim(); });
+      Object.keys(nonKbmWeekdaySchedules).forEach((k, i) => { const el = document.getElementById(`nonkbm-reg-label-${i}`); if (el) nonKbmWeekdaySchedules[k].label = el.value.trim(); });
+      Object.keys(nonKbmFridaySchedules).forEach((k, i) => { const el = document.getElementById(`nonkbm-fri-label-${i}`); if (el) nonKbmFridaySchedules[k].label = el.value.trim(); });
+      await sb.from('labkom_store').upsert({ id: 'labkom_schedules', payload: { kbm: kbmSchedules, nonKbmWeekday: nonKbmWeekdaySchedules, nonKbmFriday: nonKbmFridaySchedules }, updated_at: new Date().toISOString() });
+      alert('Jadwal berhasil disimpan!');
     }
 
     function switchTab(cat) {
@@ -414,81 +394,47 @@
 
     function renderDeviceTable() {
       const tbody = document.getElementById('admin-device-table');
-      const devices = Object.values(allDevices[activeTab] || {});
+      tbody.innerHTML = Object.values(allDevices[activeTab] || {}).map(dev => {
+        const entries = Object.entries(dev.bookings || {});
+        const has = entries.length > 0;
+        const badge = dev.alarmLocked ? '<span class="px-2 py-0.5 rounded-full bg-red-600/30 text-red-300 font-bold text-[10px]">🚨 Alarm</span>'
+          : dev.status === 'maintenance' ? '<span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-bold text-[10px]">Rusak</span>'
+          : has ? `<span class="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 font-bold text-[10px]">${entries.length} Slot</span>`
+          : '<span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-[10px]">Normal</span>';
 
-      tbody.innerHTML = devices.map(dev => {
-        const bookingsObj = dev.bookings || {};
-        const activeEntries = Object.entries(bookingsObj);
-        const hasBookings = activeEntries.length > 0;
+        const listHtml = has ? `<div class="flex flex-wrap gap-1.5">${entries.map(([k, b]) => `
+          <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-900 border border-slate-700 text-[11px]">
+            <strong class="text-amber-300">[${b.dayLabel || b.date}]</strong>
+            <strong class="text-indigo-400">${b.sessionName}:</strong> ${b.user}
+            <button type="button" onclick="removeBookingFromCat('${activeTab}', '${dev.id}', '${k}')" class="text-rose-400 font-black ml-1">✕</button>
+          </span>`).join('')}</div>` : '<span class="text-slate-500">-</span>';
 
-        const badge = dev.alarmLocked
-          ? '<span class="px-2.5 py-1 rounded-full bg-red-600/30 text-red-300 font-bold text-[10px]">🚨 Terkunci Alarm</span>'
-          : dev.status === 'maintenance'
-          ? '<span class="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400 font-bold text-[10px]">Rusak</span>'
-          : hasBookings
-          ? `<span class="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-400 font-bold text-[10px]">${activeEntries.length} Slot Terisi</span>`
-          : '<span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-[10px]">Normal / Kosong</span>';
-
-        const bookingsHtml = hasBookings
-          ? `<div class="flex flex-wrap gap-1.5">${activeEntries.map(([slotKey, b]) => `
-              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-[11px] text-slate-200">
-                <strong class="text-amber-300">[${b.dayLabel || formatIndoDateLabel(b.date)}]</strong>
-                <strong class="text-indigo-400">${b.sessionName} (${b.timeLabel || ''}):</strong> ${b.user}
-                <button type="button" onclick="removeSingleBooking('${dev.id}', '${slotKey}')" class="text-rose-400 hover:text-rose-300 font-black ml-1" title="Hapus booking ini">✕</button>
-              </span>
-            `).join('')}</div>`
-          : '<span class="text-slate-500">-</span>';
-
-        return `
-          <tr class="hover:bg-slate-900/40">
-            <td class="py-3 px-3 font-extrabold text-white">${dev.id}</td>
-            <td class="py-3 px-3">${badge}</td>
-            <td class="py-3 px-3">${bookingsHtml}</td>
-            <td class="py-3 px-3 text-right space-x-1.5 whitespace-nowrap">
-              ${(hasBookings || dev.status === 'maintenance' || dev.alarmLocked) ? `<button type="button" onclick="setDeviceFree('${dev.id}')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[11px] font-bold">Kosongkan Semua</button>` : ''}
-              ${dev.status !== 'maintenance' ? `<button type="button" onclick="setDeviceMaintenance('${dev.id}')" class="px-2.5 py-1 bg-amber-600/30 text-amber-300 border border-amber-500/30 rounded-lg text-[11px] font-bold">Tandai Rusak</button>` : ''}
-              <button type="button" onclick="triggerAlarmNow('${dev.id}')" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-[11px] font-bold">🚨 Alarm</button>
-            </td>
-          </tr>
-        `;
+        return `<tr class="hover:bg-slate-900/40">
+          <td class="py-3 px-3 font-extrabold text-white">${dev.id}</td>
+          <td class="py-3 px-3">${badge}</td>
+          <td class="py-3 px-3">${listHtml}</td>
+          <td class="py-3 px-3 text-right space-x-1 whitespace-nowrap">
+            ${(has || dev.status === 'maintenance' || dev.alarmLocked) ? `<button type="button" onclick="setDeviceFree('${dev.id}')" class="px-2.5 py-1 bg-emerald-600 text-white rounded-lg text-[11px] font-bold">Kosongkan</button>` : ''}
+            ${dev.status !== 'maintenance' ? `<button type="button" onclick="setDeviceMaintenance('${dev.id}')" class="px-2.5 py-1 bg-amber-600/30 text-amber-300 rounded-lg text-[11px] font-bold">Rusak</button>` : ''}
+            <button type="button" onclick="triggerAlarmNow('${dev.id}')" class="px-2.5 py-1 bg-rose-600 text-white rounded-lg text-[11px] font-bold">🚨 Alarm</button>
+          </td>
+        </tr>`;
       }).join('');
     }
 
-    async function removeSingleBooking(devId, slotKey) {
-      if (allDevices[activeTab][devId] && allDevices[activeTab][devId].bookings) {
-        delete allDevices[activeTab][devId].bookings[slotKey];
-        await saveCategoryToCloud(activeTab);
-      }
-    }
-
-    async function setDeviceFree(id) {
-      allDevices[activeTab][id] = { ...allDevices[activeTab][id], status: 'free', bookings: {}, alarmLocked: false };
-      await saveCategoryToCloud(activeTab);
-    }
-
-    async function setDeviceMaintenance(id) {
-      allDevices[activeTab][id] = { ...allDevices[activeTab][id], status: 'maintenance', alarmLocked: false };
-      await saveCategoryToCloud(activeTab);
-    }
-
-    async function triggerAlarmNow(id) {
-      allDevices[activeTab][id] = { ...allDevices[activeTab][id], alarmLocked: true };
-      await saveCategoryToCloud(activeTab);
-      alert(`Alarm lock screen dikirim ke perangkat ${id}!`);
-    }
-
+    async function setDeviceFree(id) { allDevices[activeTab][id] = { ...allDevices[activeTab][id], status: 'free', bookings: {}, alarmLocked: false }; await saveCategoryToCloud(activeTab); }
+    async function setDeviceMaintenance(id) { allDevices[activeTab][id] = { ...allDevices[activeTab][id], status: 'maintenance', alarmLocked: false }; await saveCategoryToCloud(activeTab); }
+    async function triggerAlarmNow(id) { allDevices[activeTab][id] = { ...allDevices[activeTab][id], alarmLocked: true }; await saveCategoryToCloud(activeTab); alert(`Alarm dikirim ke ${id}!`); }
     async function resetAllCurrentCategory() {
-      if (!confirm(`Yakin kosongkan semua booking di kategori ${activeTab}?`)) return;
-      Object.keys(allDevices[activeTab]).forEach(id => {
-        allDevices[activeTab][id] = { ...allDevices[activeTab][id], bookings: {}, alarmLocked: false };
-      });
+      if (!confirm(`Kosongkan semua booking di ${activeTab}?`)) return;
+      Object.keys(allDevices[activeTab]).forEach(id => { allDevices[activeTab][id] = { ...allDevices[activeTab][id], bookings: {}, alarmLocked: false }; });
       await saveCategoryToCloud(activeTab);
     }
 
     async function initAdmin() {
-      await syncAllFromCloud();
+      await syncAllFromCloud(true);
       if (syncIntervalId) clearInterval(syncIntervalId);
-      syncIntervalId = setInterval(syncAllFromCloud, 4000);
+      syncIntervalId = setInterval(() => syncAllFromCloud(false), 4000);
     }
   </script>
 </body>
