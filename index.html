@@ -35,7 +35,7 @@
       <div class="flex items-center gap-2 bg-slate-900 p-1.5 rounded-xl border border-slate-800">
         <button type="button" onclick="switchView('menu')" id="btn-nav-menu" class="px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 text-white">🏠 Main Menu</button>
         <button type="button" onclick="switchView('grid')" id="btn-nav-grid" class="px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white">📋 Denah Perangkat</button>
-        <a href="admin.html" class="px-4 py-2 rounded-lg text-xs font-bold text-rose-400 hover:text-rose-300">⚙️ Admin Panel</a>
+        <a href="admin.html" class="px-4 py-2 rounded-lg text-xs font-bold text-rose-400 hover:text-rose-300">🔐 Admin Panel</a>
       </div>
     </div>
   </header>
@@ -70,7 +70,7 @@
           <span id="live-week-display" class="px-3 py-1 rounded-full bg-indigo-600/30 border border-indigo-500/50 text-indigo-300 text-xs font-extrabold tracking-wide">🗓️ Pekan ke-...</span>
         </div>
 
-        <p class="text-xs text-slate-400">Jam operasional booking Labkom: <strong>07.00 – 17.00 WIB</strong> (KBM s.d. 14.00, Non-KBM s.d. 17.00).</p>
+        <p class="text-xs text-slate-400">Jam operasional: <strong>KBM (07.00 – 14.00)</strong> • <strong>Non-KBM (14.00 – 15.00 & 16.00 – 17.00, jeda sholat 15.00–16.00)</strong>.</p>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -87,7 +87,7 @@
           <div class="w-12 h-12 rounded-2xl bg-cyan-500 text-white flex items-center justify-center text-xl">💻</div>
           <div>
             <h3 class="font-extrabold text-cyan-400 text-base">Booking Non-KBM Gadgets</h3>
-            <p id="desc-gadget-nonkbm" class="text-xs text-slate-400 mt-1">Laptop & Chromebook di luar jam KBM (s.d. 17.00).</p>
+            <p id="desc-gadget-nonkbm" class="text-xs text-slate-400 mt-1">Sesi 14.00–15.00 & 16.00–17.00 (Jeda Sholat 15.00–16.00).</p>
           </div>
           <span class="text-xs font-bold text-cyan-400">Buka Denah Gadget →</span>
         </div>
@@ -105,7 +105,7 @@
           <div class="w-12 h-12 rounded-2xl bg-violet-600 text-white flex items-center justify-center text-xl">🕹️</div>
           <div>
             <h3 class="font-extrabold text-violet-400 text-base">Booking PC Non-KBM</h3>
-            <p id="desc-pc-nonkbm" class="text-xs text-slate-400 mt-1">Komputer PC Desktop di luar jam KBM (s.d. 17.00).</p>
+            <p id="desc-pc-nonkbm" class="text-xs text-slate-400 mt-1">Sesi 14.00–15.00 & 16.00–17.00 (Jeda Sholat 15.00–16.00).</p>
           </div>
           <span class="text-xs font-bold text-violet-400">Buka Denah PC →</span>
         </div>
@@ -113,10 +113,10 @@
 
       <div class="max-w-xs mx-auto pt-2">
         <a href="admin.html" class="card-3d glass-card rounded-3xl p-5 flex flex-col items-center text-center space-y-2 border border-rose-500/30 hover:border-rose-500">
-          <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-lg">⚙️</div>
+          <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-lg">🔐</div>
           <div>
-            <h3 class="font-bold text-rose-400 text-sm">Panel Admin</h3>
-            <p class="text-[11px] text-slate-400">Kelola Booking, Perangkat Rusak & Alarm</p>
+            <h3 class="font-bold text-rose-400 text-sm">Panel Admin (Wajib PIN)</h3>
+            <p class="text-[11px] text-slate-400">Kelola Jadwal, Reset Mingguan & Alarm</p>
           </div>
         </a>
       </div>
@@ -132,7 +132,7 @@
       <div class="glass-card rounded-2xl p-4 space-y-3 border border-indigo-500/30">
         <div class="flex flex-wrap justify-between items-center gap-2">
           <div>
-            <h3 class="text-xs font-extrabold uppercase tracking-wider text-indigo-300">🕒 Pilih Jam / Sesi Booking (Maks. 17.00 WIB):</h3>
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-indigo-300">🕒 Pilih Jam / Sesi Booking (Maks. 17.00 WIB • Jeda Sholat 15.00–16.00):</h3>
             <p class="text-[11px] text-slate-400">Booking di satu sesi tidak mengganggu sesi lainnya. Klik tombol jadwal di kanan untuk cek rincian semua sesi.</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
@@ -253,7 +253,7 @@
     let isSaving = false;
     let devicesState = {};
 
-    // Default jadwal: KBM (s.d. 14.00), Non-KBM Hari Biasa (14.00 - 17.00), Non-KBM Jumat Seharian (07.30 - 17.00)
+    // Jadwal KBM (Senin-Kamis maks 14.00) & Non-KBM (jeda sholat 15.00 - 16.00 ditiadakan)
     const DEFAULT_KBM_SCHEDULES = {
       'KBM-1': { label: '07:00 - 08:20', minutes: 80 },
       'KBM-2': { label: '08:50 - 10:00', minutes: 70 },
@@ -262,15 +262,15 @@
     };
 
     const DEFAULT_NONKBM_WEEKDAY = {
-      'Non-KBM 1': { label: '14:00 - 15:30', minutes: 90 },
-      'Non-KBM 2': { label: '15:30 - 17:00', minutes: 90 }
+      'Non-KBM 1': { label: '14:00 - 15:00', minutes: 60 },
+      'Non-KBM 2': { label: '16:00 - 17:00', minutes: 60 }
     };
 
     const DEFAULT_NONKBM_FRIDAY = {
       'Non-KBM 1': { label: '07:30 - 09:30', minutes: 120 },
       'Non-KBM 2': { label: '09:30 - 11:30', minutes: 120 },
-      'Non-KBM 3': { label: '13:00 - 15:00', minutes: 120 },
-      'Non-KBM 4': { label: '15:00 - 17:00', minutes: 120 }
+      'Non-KBM 3': { label: '13:30 - 15:00', minutes: 90 },
+      'Non-KBM 4': { label: '16:00 - 17:00', minutes: 60 }
     };
 
     let kbmSchedules = { ...DEFAULT_KBM_SCHEDULES };
@@ -283,11 +283,20 @@
       return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     }
 
+    function getWeekIdentifier(dateObj = new Date()) {
+      const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+    }
+
+    // Berlaku di SEMUA hari Jumat pada semua pekan
     function isFridayToday() {
       return new Date().getDay() === 5;
     }
 
-    // Mengambil daftar sesi aktif sesuai mode (KBM vs Non-KBM) & hari (Jumat vs Hari Biasa)
     function getActiveSchedulesMap() {
       if (currentModeIsKbm) return kbmSchedules;
       return isFridayToday() ? nonKbmFridaySchedules : nonKbmWeekdaySchedules;
@@ -298,9 +307,10 @@
       return `${currentModeIsKbm ? 'KBM' : `NONKBM_${dayType}`}_${slotName}`;
     }
 
-    function cleanOldDayBookings(stateObj) {
+    function cleanExpiredBookings(stateObj) {
       let changed = false;
       const today = getTodayDateString();
+      const currentWeek = getWeekIdentifier();
       Object.keys(stateObj).forEach(id => {
         const dev = stateObj[id];
         if (!dev) return;
@@ -310,7 +320,10 @@
         }
         Object.keys(dev.bookings).forEach(slot => {
           const b = dev.bookings[slot];
-          if (b && b.date && b.date !== today) {
+          if (!b) return;
+          const isDifferentDay = b.date && b.date !== today;
+          const isDifferentWeek = b.weekId && b.weekId !== currentWeek;
+          if (isDifferentDay || isDifferentWeek) {
             delete dev.bookings[slot];
             changed = true;
           }
@@ -342,7 +355,7 @@
           cardEl.classList.add('opacity-55', 'cursor-not-allowed', 'border-rose-500/30', 'bg-slate-900/40');
           descEl.innerText = 'Layanan KBM ditutup khusus setiap hari Jumat.';
           actionEl.className = 'text-xs font-extrabold text-rose-400';
-          actionEl.innerText = '🚫 Ups, there are no KBM today!';
+          actionEl.innerText = '🚫 Oops, there are no KBM today!';
         } else {
           cardEl.classList.add('card-3d', 'cursor-pointer', 'hover:border-indigo-500');
           cardEl.classList.remove('opacity-55', 'cursor-not-allowed', 'border-rose-500/30', 'bg-slate-900/40');
@@ -356,13 +369,13 @@
       const descPcNon = document.getElementById('desc-pc-nonkbm');
       if (descGadgetNon) {
         descGadgetNon.innerText = friday
-          ? 'Jadwal penuh khusus Jumat (07.30 - 17.00 WIB).'
-          : 'Laptop & Chromebook setelah jam KBM (14.00 - 17.00 WIB).';
+          ? 'Jadwal khusus Jumat (07.30–11.30, 13.30–15.00, 16.00–17.00).'
+          : 'Sesi 14.00–15.00 & 16.00–17.00 (Jeda Sholat 15.00–16.00).';
       }
       if (descPcNon) {
         descPcNon.innerText = friday
-          ? 'Jadwal penuh khusus Jumat (07.30 - 17.00 WIB).'
-          : 'Komputer PC Desktop setelah jam KBM (14.00 - 17.00 WIB).';
+          ? 'Jadwal khusus Jumat (07.30–11.30, 13.30–15.00, 16.00–17.00).'
+          : 'Sesi 14.00–15.00 & 16.00–17.00 (Jeda Sholat 15.00–16.00).';
       }
     }
 
@@ -428,8 +441,12 @@
 
       document.getElementById('select-jampel').innerHTML = opts;
       document.getElementById('select-mass-jampel').innerHTML = opts;
-      document.getElementById('label-single-session').innerText = currentModeIsKbm ? 'Pilih Sesi Jam KBM (07.00 - 14.00)' : 'Pilih Sesi Waktu Non-KBM (s.d. 17.00)';
-      document.getElementById('label-mass-session').innerText = currentModeIsKbm ? 'Pilih Sesi Jam KBM (07.00 - 14.00)' : 'Pilih Sesi Waktu Non-KBM (s.d. 17.00)';
+      document.getElementById('label-single-session').innerText = currentModeIsKbm
+        ? 'Pilih Sesi Jam KBM (07.00 - 14.00)'
+        : 'Pilih Sesi Waktu Non-KBM (Jeda Sholat 15.00 - 16.00)';
+      document.getElementById('label-mass-session').innerText = currentModeIsKbm
+        ? 'Pilih Sesi Jam KBM (07.00 - 14.00)'
+        : 'Pilih Sesi Waktu Non-KBM (Jeda Sholat 15.00 - 16.00)';
     }
 
     function getDefaultDevices(cat) {
@@ -456,7 +473,7 @@
         devicesState = JSON.parse(localStorage.getItem(key) || 'null') || getDefaultDevices(currentCategory);
       }
 
-      const cleaned = cleanOldDayBookings(devicesState);
+      const cleaned = cleanExpiredBookings(devicesState);
       localStorage.setItem(key, JSON.stringify(devicesState));
       if (cleaned) {
         await sb.from('labkom_store').upsert({ id: key, payload: devicesState, updated_at: new Date().toISOString() });
@@ -502,7 +519,7 @@
 
     function openService(serviceName, category, isKbm) {
       if (isKbm && isFridayToday()) {
-        alert('Ups, there are no KBM today!');
+        alert('Oops, there are no KBM today!');
         return;
       }
       currentCategory = category;
@@ -678,6 +695,7 @@
       const sched = activeMap[slotName] || { label: '' };
       const fullSlotId = getFullSlotId(slotName);
       const today = getTodayDateString();
+      const weekId = getWeekIdentifier();
 
       const dev = devicesState[selectedSeatId];
       if (!dev.bookings) dev.bookings = {};
@@ -689,7 +707,8 @@
         user: name,
         sessionName: slotName,
         timeLabel: sched.label,
-        date: today
+        date: today,
+        weekId: weekId
       };
 
       selectedSlotKey = slotName;
@@ -716,6 +735,7 @@
       const sched = activeMap[slotName] || { label: '' };
       const fullSlotId = getFullSlotId(slotName);
       const today = getTodayDateString();
+      const weekId = getWeekIdentifier();
 
       let count = 0;
       Object.keys(devicesState).forEach(id => {
@@ -727,7 +747,8 @@
             user: name,
             sessionName: slotName,
             timeLabel: sched.label,
-            date: today
+            date: today,
+            weekId: weekId
           };
           count++;
         }
